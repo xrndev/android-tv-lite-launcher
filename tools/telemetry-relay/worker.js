@@ -93,6 +93,11 @@ export default {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text: format(ev), disable_web_page_preview: true }),
     });
-    return new Response(null, { status: reply.ok ? 204 : 502 });
+    if (reply.ok) return new Response(null, { status: 204 });
+    // Diagnostico para el mantenedor: estado y descripcion que da Telegram (p. ej. "401 Unauthorized" = token
+    // incorrecto, "400 chat not found" = id de chat incorrecto). No contiene secretos.
+    let why = "";
+    try { why = String((await reply.json()).description || "").slice(0, 120); } catch { /* sin cuerpo */ }
+    return new Response(`telegram ${reply.status} ${why}`, { status: 502 });
   },
 };
