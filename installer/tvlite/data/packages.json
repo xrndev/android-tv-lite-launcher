@@ -1,0 +1,107 @@
+{
+  "_doc": "Listas de debloat. 'tier': safe < recommended < aggressive; 'optional' nunca se preselecciona. 'verified_on' lista los dispositivos REALES donde se probo; una lista sin verified_on no se aplica salvo --include-unverified. Nada de aqui puede estar en protected_*.",
+  "protected_exact": [
+    "android",
+    "com.android.vending",
+    "com.android.shell",
+    "com.android.systemui",
+    "com.android.settings",
+    "com.android.tv.settings",
+    "com.android.keychain",
+    "com.android.certinstaller",
+    "com.android.packageinstaller",
+    "com.android.permissioncontroller",
+    "com.android.inputdevices",
+    "com.android.externalstorage",
+    "com.android.companiondevicemanager",
+    "com.android.location.fused",
+    "com.android.webview",
+    "com.android.inputmethod.latin",
+    "com.google.android.webview",
+    "com.google.android.gms",
+    "com.google.android.gsf",
+    "com.google.android.packageinstaller",
+    "com.google.android.permissioncontroller",
+    "com.google.android.inputmethod.latin",
+    "com.google.android.tvlauncher",
+    "dev.xrndev.litelauncher"
+  ],
+  "protected_prefixes": [
+    "com.android.providers.",
+    "com.android.networkstack",
+    "com.android.wifi",
+    "com.android.bluetooth",
+    "com.android.tethering",
+    "com.google.android.gms.",
+    "android."
+  ],
+  "protected_suffixes": [".overlay", ".rro", ".resoverlay", ".auto_generated_rro_product__", ".auto_generated_rro_vendor__"],
+  "lists": [
+    {
+      "id": "aosp-unused",
+      "name": "Utilidades de Android sin uso en una tele",
+      "match": {},
+      "verified_on": ["TCL mt5867 Android 11"],
+      "packages": [
+        {"pkg": "com.android.printspooler", "label": "Impresión", "tier": "safe"},
+        {"pkg": "com.android.htmlviewer", "label": "Visor HTML", "tier": "safe"},
+        {"pkg": "com.android.soundpicker", "label": "Selector de sonidos", "tier": "safe"},
+        {"pkg": "com.android.dynsystem", "label": "Instalación de sistemas dinamicos", "tier": "safe"},
+        {"pkg": "com.android.backupconfirm", "label": "Confirmación de copias de seguridad", "tier": "safe"},
+        {"pkg": "com.android.localtransport", "label": "Transporte local de backup", "tier": "safe"},
+        {"pkg": "com.android.sharedstoragebackup", "label": "Backup de almacenamiento compartido", "tier": "safe"},
+        {"pkg": "com.android.wallpaperbackup", "label": "Backup de fondos de pantalla", "tier": "safe"},
+        {"pkg": "com.android.dreams.basic", "label": "Salvapantallas basico", "tier": "recommended"}
+      ]
+    },
+    {
+      "id": "google-tv-extras",
+      "name": "Extras de Google TV que casi nadie usa",
+      "match": {},
+      "verified_on": ["TCL mt5867 Android 11"],
+      "packages": [
+        {"pkg": "com.google.android.play.games", "label": "Google Play Juegos", "tier": "recommended"},
+        {"pkg": "com.google.android.videos", "label": "Google TV / Películas", "tier": "recommended"},
+        {"pkg": "com.google.android.youtube.tvmusic", "label": "YouTube Music", "tier": "recommended"},
+        {"pkg": "com.google.android.apps.nbu.smartconnect.tv", "label": "Smart Connect", "tier": "recommended"},
+        {"pkg": "com.google.android.feedback", "label": "Envio de comentarios", "tier": "safe"},
+        {"pkg": "com.google.android.onetimeinitializer", "label": "Inicializador de un solo uso", "tier": "safe"},
+        {"pkg": "com.google.android.syncadapters.calendar", "label": "Sincronización de calendario", "tier": "recommended"},
+        {"pkg": "com.google.android.backdrop", "label": "Fondos del salvapantallas ambiente", "tier": "recommended"}
+      ]
+    },
+    {
+      "id": "google-voice-accessibility",
+      "name": "Asistente de voz y accesibilidad de Google",
+      "match": {},
+      "verified_on": ["TCL mt5867 Android 11"],
+      "packages": [
+        {"pkg": "com.google.android.katniss", "label": "Google Assistant", "tier": "optional", "breaks": "El boton de micrófono del mando deja de funcionar y la busqueda por voz."},
+        {"pkg": "com.google.android.marvin.talkback", "label": "TalkBack (lector de pantalla)", "tier": "optional", "breaks": "Pierdes el lector de pantalla para accesibilidad."}
+      ]
+    },
+    {
+      "id": "tcl",
+      "name": "Apps preinstaladas de TCL",
+      "match": {"manufacturer": ["TCL"]},
+      "verified_on": ["TCL mt5867 Android 11"],
+      "packages": [
+        {"pkg": "com.tcl.esticker", "label": "TCL eSticker", "tier": "recommended"},
+        {"pkg": "com.tcl.copydatatotv", "label": "Copiar datos a la tele", "tier": "recommended"},
+        {"pkg": "com.tcl.hearaid", "label": "TCL Hear Aid", "tier": "recommended"},
+        {"pkg": "com.tcl.messagebox", "label": "Centro de mensajes", "tier": "recommended"},
+        {"pkg": "com.tcl.waterfall.overseas", "label": "Contenido promocional del inicio", "tier": "recommended"},
+        {"pkg": "com.tcl.smartalexa", "label": "Alexa de TCL", "tier": "recommended"},
+        {"pkg": "com.tcl.dashboard", "label": "Panel TCL (regalos/IoT)", "tier": "recommended"},
+        {"pkg": "com.tcl.usercenter", "label": "Cuenta de usuario TCL", "tier": "recommended"},
+        {"pkg": "com.tcl.useragreement", "label": "Acuerdo de usuario TCL", "tier": "recommended"},
+        {"pkg": "com.tcl.suspension", "label": "Panel flotante Quick Panel", "tier": "recommended"},
+        {"pkg": "com.tcl.micmanager", "label": "Gestor de micrófono", "tier": "aggressive", "breaks": "Posible fallo del micrófono del mando."},
+        {"pkg": "com.tcl.guard", "label": "Safety Guard (limpiador)", "tier": "aggressive"},
+        {"pkg": "com.tcl.partnercustomizer", "label": "Teclas rápidas del mando y contenido de socios", "tier": "aggressive", "breaks": "Las teclas rápidas de TCL del mando dejan de hacer nada."},
+        {"pkg": "com.tcl.initsetup", "label": "Asistente de configuración inicial de TCL", "tier": "aggressive"},
+        {"pkg": "com.tcl.ttvs", "label": "Actualizaciones OTA y telemetría de TCL", "tier": "aggressive", "breaks": "La tele deja de recibir actualizaciones de firmware por el canal de TCL."}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "lists": [
+    {
+      "id": "acme-fixture",
+      "name": "Apps de Acme (sintetica, solo para pruebas)",
+      "match": {"manufacturer": ["AcmeTV"]},
+      "verified_on": ["fixture sintetica del emulador"],
+      "packages": [
+        {"pkg": "fixture.acme.promo", "label": "Promociones", "tier": "recommended"},
+        {"pkg": "fixture.acme.ads", "label": "Publicidad", "tier": "safe"}
+      ]
+    }
+  ]
+}

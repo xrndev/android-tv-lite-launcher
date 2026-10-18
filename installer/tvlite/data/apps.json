@@ -1,0 +1,38 @@
+{
+  "_doc": "Catalogo de apps instalables. method 'play': se abre su ficha en Play Store y se pulsa Instalar (no se redistribuyen APK). method 'apk': descarga oficial del desarrollador. 'verified': el paquete se vio en una tele real; 'install_verified': el flujo de instalacion se probo en una tele real.",
+  "categories": {"streaming": "Streaming", "media": "Reproductores y música", "stremio": "Stremio", "vpn": "VPN"},
+  "apps": [
+    {"id": "netflix", "name": "Netflix", "package": "com.netflix.ninja", "category": "streaming", "method": "play", "verified": true},
+    {"id": "prime", "name": "Prime Video", "package": "com.amazon.amazonvideo.livingroom", "category": "streaming", "method": "play", "verified": true},
+    {"id": "disney", "name": "Disney+", "package": "com.disney.disneyplus", "category": "streaming", "method": "play", "verified": true},
+    {"id": "hbomax", "name": "HBO Max", "package": "com.wbd.stream", "category": "streaming", "method": "play", "verified": true},
+    {"id": "youtube", "name": "YouTube", "package": "com.google.android.youtube.tv", "category": "streaming", "method": "play", "verified": true},
+    {"id": "movistar", "name": "Movistar+", "package": "com.movistarplus.androidtv", "category": "streaming", "method": "play", "verified": true},
+    {"id": "dazn", "name": "DAZN", "package": "com.dazn", "category": "streaming", "method": "play", "verified": true},
+    {"id": "rakuten", "name": "Rakuten TV", "package": "tv.wuaki.apptv", "category": "streaming", "method": "play", "verified": true},
+    {"id": "redbull", "name": "Red Bull TV", "package": "com.nousguide.android.rbtv", "category": "streaming", "method": "play", "verified": true, "install_verified": true},
+    {"id": "appletv", "name": "Apple TV", "package": "com.apple.atve.androidtv.appletv", "category": "streaming", "method": "play", "verified": false},
+    {"id": "twitch", "name": "Twitch", "package": "tv.twitch.android.app", "category": "streaming", "method": "play", "verified": false},
+    {"id": "plex", "name": "Plex", "package": "com.plexapp.android", "category": "media", "method": "play", "verified": false},
+    {"id": "kodi", "name": "Kodi", "package": "org.xbmc.kodi", "category": "media", "method": "play", "verified": false},
+    {"id": "vlc", "name": "VLC", "package": "org.videolan.vlc", "category": "media", "method": "play", "verified": false},
+    {"id": "spotify", "name": "Spotify", "package": "com.spotify.tv.android", "category": "media", "method": "play", "verified": false},
+    {
+      "id": "stremio", "name": "Stremio", "package": "com.stremio.one", "category": "stremio",
+      "method": "apk", "fallback": "play", "verified": true, "install_verified": true,
+      "apk": {
+        "armeabi-v7a": "https://dl.strem.io/android/v1.10.4-androidTV/com.stremio.one-1.10.4-31048580-armeabi-v7a.apk",
+        "arm64-v8a": "https://dl.strem.io/android/v1.10.4-androidTV/com.stremio.one-1.10.4-33145732-arm64-v8a.apk",
+        "x86": "https://dl.strem.io/android/v1.10.4-androidTV/com.stremio.one-1.10.4-32097156-x86.apk",
+        "x86_64": "https://dl.strem.io/android/v1.10.4-androidTV/com.stremio.one-1.10.4-34194308-x86_64.apk"
+      }
+    },
+    {"id": "nordvpn", "name": "NordVPN", "package": "com.nordvpn.android", "category": "vpn", "method": "play", "verified": true, "install_verified": true},
+    {"id": "surfshark", "name": "Surfshark", "package": "com.surfshark.vpnclient.android", "category": "vpn", "method": "play", "verified": false},
+    {"id": "expressvpn", "name": "ExpressVPN", "package": "com.expressvpn.vpn", "category": "vpn", "method": "play", "verified": false},
+    {"id": "protonvpn", "name": "Proton VPN", "package": "ch.protonvpn.android", "category": "vpn", "method": "play", "verified": false},
+    {"id": "mullvad", "name": "Mullvad VPN", "package": "net.mullvad.mullvadvpn", "category": "vpn", "method": "play", "verified": false},
+    {"id": "pia", "name": "Private Internet Access", "package": "com.privateinternetaccess.android", "category": "vpn", "method": "play", "verified": false},
+    {"id": "cyberghost", "name": "CyberGhost", "package": "de.mobileconcepts.cyberghost", "category": "vpn", "method": "play", "verified": false}
+  ]
+}

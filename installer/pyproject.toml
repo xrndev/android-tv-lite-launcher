@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tvlite"
+version = "0.1.0"
+description = "Optimiza una Android TV con poca RAM: debloat reversible, launcher ligero y apps populares por ADB."
+readme = "../README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.scripts]
+tvlite = "tvlite.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["tvlite*"]
+
+[tool.setuptools.package-data]
+tvlite = ["data/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["emulator: needs a running Android emulator (see tools/emulator)"]

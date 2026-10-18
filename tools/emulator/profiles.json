@@ -1,0 +1,25 @@
+{
+  "_doc": "Perfiles de emulador para probar tvlite con distintas RAM y versiones de Android. NO reproducen la GPU ni el SoC de una tele real: sirven para probar la logica (debloat, launcher, restauracion) en varios entornos. Las imagenes x86 son rapidas en PCs x86 con aceleracion; las ARM funcionan pero muy lentas.",
+  "profiles": {
+    "atv11-1gb": {
+      "image": "system-images;android-30;android-tv;x86", "api": 30, "ram_mb": 1024, "device": "tv_720p",
+      "approximates": "TV de 1 GB con Android 11 (como la TCL mt5867 probada)"
+    },
+    "atv11-2gb": {
+      "image": "system-images;android-30;android-tv;x86", "api": 30, "ram_mb": 2048, "device": "tv_1080p",
+      "approximates": "TV de 2 GB con Android 11"
+    },
+    "atv9-1gb": {
+      "image": "system-images;android-28;android-tv;x86", "api": 28, "ram_mb": 1024, "device": "tv_720p",
+      "approximates": "TV antigua de 1 GB con Android 9 (sin roles de launcher: prueba la ruta set-home-activity)"
+    },
+    "atv14-2gb": {
+      "image": "system-images;android-34;android-tv;x86", "api": 34, "ram_mb": 2048, "device": "tv_1080p",
+      "approximates": "TV reciente de 2 GB con Android 14"
+    },
+    "atv14-4gb": {
+      "image": "system-images;android-34;android-tv;x86", "api": 34, "ram_mb": 4096, "device": "tv_1080p",
+      "approximates": "TV con RAM suficiente: perfil 'normal', solo limpieza segura"
+    }
+  }
+}

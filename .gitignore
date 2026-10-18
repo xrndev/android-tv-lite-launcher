@@ -1,0 +1,15 @@
+launcher/build/
+launcher/*.keystore
+/tools/android-sdk/
+/tools/platform-tools/
+/tools/emulator/build/
+backups/
+logs/
+*.apk
+installer/dist/
+installer/build/
+*.spec
+__pycache__/
+*.egg-info/
+.pytest_cache/
+installer/tvlite/data/litelauncher.apk
