@@ -6,7 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from . import android, appinstall, debloat, device as devmod, report as reportmod, runner, telemetry
+from . import android, appinstall, debloat, device as devmod, dossier as dossiermod, report as reportmod, runner, telemetry
 from .adb import Adb, AdbError, data_dir, ensure_adb, find_adb
 from .i18n import default_language, translate, translate_message
 from .restore import restore
@@ -37,6 +37,22 @@ def cmd_report(args) -> int:
     adb, info = _connect(args)
     print(reportmod.build_report(adb, info))
     print("(Revisa el informe antes de pegarlo en un issue. No se ha enviado nada.)", file=sys.stderr)
+    return 0
+
+
+def cmd_analyze(args) -> int:
+    """Dossier de la tele: solo lee y muestra. Nunca se envia desde aqui (el envio llegara con su consentimiento)."""
+    import json
+    adb, info = _connect(args)
+    dossier = dossiermod.collect(adb, info, progress=lambda m: print(f"  ... {m}", file=sys.stderr))
+    if args.json:
+        print(json.dumps(dossier, indent=2, ensure_ascii=False))
+    else:
+        print(dossiermod.summarize(dossier, default_language()))
+    if args.out:
+        Path(args.out).write_text(json.dumps(dossier, indent=2, ensure_ascii=False), encoding="utf-8")
+        print(f"Dossier guardado en {args.out}", file=sys.stderr)
+    print("(Solo lectura: no se ha modificado la tele ni se ha enviado nada.)", file=sys.stderr)
     return 0
 
 
@@ -196,6 +212,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     with_ip(sub.add_parser("detect", help="muestra que tele es")).set_defaults(func=cmd_detect)
     with_ip(sub.add_parser("report", help="informe anonimo para pegar en un issue (no se envia nada)")).set_defaults(func=cmd_report)
+    p = with_ip(sub.add_parser("analyze", help="inventario de paquetes de sistema de la tele (solo lectura, no se envia nada)"))
+    p.add_argument("--json", action="store_true", help="muestra el dossier completo")
+    p.add_argument("--out", help="guarda el dossier completo en este fichero")
+    p.set_defaults(func=cmd_analyze)
     with_ip(sub.add_parser("metrics", help="RAM disponible y paquetes ahora mismo")).set_defaults(func=cmd_metrics)
     p = with_ip(sub.add_parser("plan", help="muestra que se quitaria, sin tocar nada"))
     p.add_argument("--include-unverified", action="store_true")

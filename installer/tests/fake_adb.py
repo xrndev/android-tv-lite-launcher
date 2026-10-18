@@ -28,6 +28,10 @@ class FakeAdb:
         authorized=True,
         pull_fails=False,
         signature_conflict=False,
+        queries=None,
+        package_dump="",
+        meminfo_dump="",
+        features=None,
     ):
         self.serial = None
         self.props = {
@@ -64,6 +68,11 @@ class FakeAdb:
         self.authorized = authorized
         self.pull_fails = pull_fails
         self.signature_conflict = signature_conflict
+        # Para el dossier: accion -> lista de componentes 'pkg/.Clase' que responden a ella.
+        self.queries = queries or {}
+        self.package_dump = package_dump
+        self.meminfo_dump = meminfo_dump
+        self.features = features if features is not None else ["android.software.leanback", "android.hardware.touchscreen"]
         self.uninstall_count = 0
         self.pending_play_pkg = None
         self.log: list[str] = []
@@ -214,6 +223,17 @@ class FakeAdb:
         if c.startswith("cmd package resolve-activity"):
             home = self._resolve_home()
             return f"priority=0 preferredOrder=0\n{home}/.MainActivity" if home else "No activity found"
+        m = re.match(r"cmd package query-(services|receivers|activities) --brief -a (\S+)", c)
+        if m and m.group(2) in self.queries:
+            return "\n".join(self.queries[m.group(2)])
+        if c.startswith("cmd package query-services") or c.startswith("cmd package query-receivers"):
+            return ""
+        if c == "dumpsys package packages":
+            return self.package_dump
+        if c == "dumpsys meminfo":
+            return self.meminfo_dump
+        if c == "pm list features":
+            return "\n".join(f"feature:{f}" for f in self.features)
         if c.startswith("cmd package query-activities"):
             return "\n".join(f"{h}/.MainActivity" for h in self._homes())
         m = re.match(r"am start -n (\S+)", c)
