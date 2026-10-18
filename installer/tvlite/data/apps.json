@@ -18,13 +18,27 @@
     {"id": "vlc", "name": "VLC", "package": "org.videolan.vlc", "category": "media", "method": "play", "verified": false},
     {"id": "spotify", "name": "Spotify", "package": "com.spotify.tv.android", "category": "media", "method": "play", "verified": false},
     {
-      "id": "stremio", "name": "Stremio", "package": "com.stremio.one", "category": "stremio",
-      "method": "apk", "fallback": "play", "verified": true, "install_verified": true,
+      "id": "stremio",
+      "name": "Stremio",
+      "package": "com.stremio.one",
+      "category": "stremio",
+      "method": "apk",
+      "fallback": "play",
+      "verified": true,
+      "install_verified": true,
       "apk": {
         "armeabi-v7a": "https://dl.strem.io/android/v1.10.4-androidTV/com.stremio.one-1.10.4-31048580-armeabi-v7a.apk",
         "arm64-v8a": "https://dl.strem.io/android/v1.10.4-androidTV/com.stremio.one-1.10.4-33145732-arm64-v8a.apk",
         "x86": "https://dl.strem.io/android/v1.10.4-androidTV/com.stremio.one-1.10.4-32097156-x86.apk",
         "x86_64": "https://dl.strem.io/android/v1.10.4-androidTV/com.stremio.one-1.10.4-34194308-x86_64.apk"
+      },
+      "version": "1.10.4",
+      "checked": "2026-10-18",
+      "sha256": {
+        "armeabi-v7a": "e18a5405bb53e12a903ff477457318b8f8d3c8e1995e0a4c3ff5d8893d1ccf0b",
+        "arm64-v8a": "caaf4faba423a47c3174eda08b94057956ce32af616c6377b3485f4f5dec993c",
+        "x86": "e4ed5d855ceb1c4b8874e0cab84537a9d1cc8bd588e37fadfd4cd9f537d59f15",
+        "x86_64": "3a9f86646ba18f4f11073dfbb01e10b1d4019e78d89ba58ec3de79f36f6cfc8c"
       }
     },
     {"id": "nordvpn", "name": "NordVPN", "package": "com.nordvpn.android", "category": "vpn", "method": "play", "verified": true, "install_verified": true},

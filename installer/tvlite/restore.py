@@ -21,10 +21,21 @@ class RestoreResult:
         return not self.failed
 
 
-def _undo(adb, reverse: dict) -> tuple[bool, str]:
+def undo(adb, reverse: dict, journal_dir: Path) -> tuple[bool, str]:
+    """Deshace una operacion del diario. journal_dir resuelve las rutas relativas a los APK guardados."""
     op = reverse["op"]
     if op == "install_existing":
         return android.restore_package(adb, reverse["pkg"])
+    if op == "install_apks":
+        pkg = reverse["pkg"]
+        files = [Path(journal_dir) / reverse["dir"] / name for name in reverse["files"]]
+        if not all(f.is_file() for f in files):
+            return False, "faltan los APK guardados de " + pkg
+        adb.shell(f"pm uninstall {pkg}")  # limpia un posible registro 'fantasma' antes de reinstalar
+        with android.adb_verification_off(adb):
+            res = adb.install_multiple(files)
+        ok = res.ok and "Success" in res.stdout and android.package_exists(adb, pkg)
+        return ok, (res.stdout or res.stderr).strip()
     if op == "enable":
         return android.enable(adb, reverse["pkg"])
     if op == "setting":
@@ -61,7 +72,7 @@ def restore(
             result.skipped.append(entry["target"])
             continue
         progress(f"Restaurando {entry['action']}: {entry['target']}")
-        ok, detail = _undo(adb, reverse)
+        ok, detail = undo(adb, reverse, journal.dir)
         (result.restored if ok else result.failed).append(entry["target"])
         if not ok:
             progress(f"  No se pudo: {detail}")

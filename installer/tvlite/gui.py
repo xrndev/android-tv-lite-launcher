@@ -9,9 +9,9 @@ import tkinter as tk
 from tkinter import messagebox, scrolledtext, ttk
 from typing import Callable, Optional
 
-from . import android, appinstall, debloat, device as devmod, runner
+from . import android, appinstall, debloat, device as devmod, report as reportmod, runner
 from .adb import Adb, AdbError, ensure_adb
-from .i18n import default_language, translate
+from .i18n import default_language, translate, translate_message
 from .restore import restore
 
 
@@ -95,7 +95,7 @@ class App:
     def _log(self, message: str) -> None:
         widget = getattr(self, "log_box", None)
         if widget is not None and widget.winfo_exists():
-            widget.insert("end", message + "\n")
+            widget.insert("end", translate_message(self.lang, message) + "\n")
             widget.see("end")
 
     # --- navegacion ---
@@ -154,7 +154,8 @@ class App:
             return self.adb_factory(self.log_line).pair(addr, code)
 
         def done(result) -> None:
-            text = str(result) if isinstance(result, Exception) else (result.stdout + result.stderr).strip()
+            text = translate_message(self.lang, str(result) if isinstance(result, Exception)
+                                     else (result.stdout + result.stderr).strip())
             self.status.config(text=text, foreground="#1b5e20" if "paired" in text.lower() else "#b00020")
 
         self.status.config(text=self.t("preparing_adb"), foreground="#444")
@@ -165,7 +166,7 @@ class App:
         try:
             runner.normalize_target(target)
         except ValueError as exc:
-            self.status.config(text=str(exc), foreground="#b00020")
+            self.status.config(text=translate_message(self.lang, str(exc)), foreground="#b00020")
             return
         self.status.config(text=self.t("preparing_adb"), foreground="#444")
         self.next_btn.config(state="disabled")
@@ -182,7 +183,7 @@ class App:
             if isinstance(result, runner.NotAuthorized):
                 self.status.config(text=self.t("need_auth"), foreground="#b00020")
             elif isinstance(result, (AdbError, ValueError)):
-                self.status.config(text=str(result), foreground="#b00020")
+                self.status.config(text=translate_message(self.lang, str(result)), foreground="#b00020")
             elif isinstance(result, Exception):
                 raise result
             else:
@@ -193,7 +194,25 @@ class App:
         self.work(job, done)
 
     def build_device(self) -> None:
-        ttk.Label(self.body, text=devmod.describe(self.info), justify="left", font=("TkDefaultFont", 11)).pack(anchor="w")
+        ttk.Label(self.body, text=devmod.describe(self.info, self.lang), justify="left", font=("TkDefaultFont", 11)).pack(anchor="w")
+        ttk.Button(self.body, text=self.t("copy_report"), command=self.do_report).pack(anchor="w", pady=(16, 0))
+        self.report_status = ttk.Label(self.body, text="", wraplength=640, justify="left", foreground="#1b5e20")
+        self.report_status.pack(anchor="w", pady=6)
+
+    def do_report(self) -> None:
+        if self.busy:
+            return
+        self.report_status.config(text=self.t("report_wait"))
+
+        def done(result) -> None:
+            if isinstance(result, Exception):
+                self.report_status.config(text=str(result), foreground="#b00020")
+                return
+            self.root.clipboard_clear()
+            self.root.clipboard_append(result)
+            self.report_status.config(text=self.t("report_copied"), foreground="#1b5e20")
+
+        self.work(lambda: reportmod.build_report(self.adb, self.info), done)
 
     def _scroll_area(self) -> ttk.Frame:
         canvas = tk.Canvas(self.body, highlightthickness=0, height=400)
@@ -223,7 +242,7 @@ class App:
             if not item.verified:
                 text += f"  [{self.t('unverified')}]"
             if not item.system:
-                text += f"  [{self.t('irreversible')}]"
+                text += f"  [{self.t('user_app')}]"
             if item.breaks:
                 text += f"\n    (!) {item.breaks}"
             ttk.Checkbutton(inner, text=text, variable=var).pack(anchor="w")
@@ -283,10 +302,19 @@ class App:
                 self._log(f"{self.t('error')}: {result}")
                 return
             self.summary = result
+            if result.error:
+                self._log(result.error)
+                self._log(self.t("connection_lost_hint"))
+            for app in result.apps:
+                if not app.ok:
+                    self._log(f"{app.app_id}: {app.detail}")
             if result.launcher_error:
                 self._log(self.t("launcher_failed") + result.launcher_error)
             self._log(self.t("done"))
             self._log(f"{self.t('backup_at')} {result.backup_dir}")
+            if not result.dry_run:
+                self._log("")
+                self._log(self.t("finish_security"))
             if result.dry_run:
                 self.next_btn.config(state="disabled")
 

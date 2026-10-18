@@ -1,0 +1,84 @@
+# EXPERIMENTAL: escrito pero NO ejecutado todavia en GitHub. Se lanza al subir una etiqueta vX.Y.Z.
+# Necesita los secretos LITE_KEYSTORE_B64 (keystore en base64), LITE_KS_PASS y, opcionalmente, LITE_KEY_PASS
+# y LITE_KEY_ALIAS. Ver docs/RELEASING.md.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    name: Launcher firmado
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - name: Compilar y firmar el launcher
+        env:
+          LITE_KEYSTORE_B64: ${{ secrets.LITE_KEYSTORE_B64 }}
+          LITE_KS_PASS: ${{ secrets.LITE_KS_PASS }}
+          LITE_KEY_PASS: ${{ secrets.LITE_KEY_PASS }}
+          LITE_KEY_ALIAS: ${{ secrets.LITE_KEY_ALIAS }}
+        run: |
+          sdkmanager "build-tools;35.0.0" "platforms;android-30"
+          echo "$LITE_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          LITE_KEYSTORE="$RUNNER_TEMP/release.keystore" bash launcher/release.sh
+          rm -f "$RUNNER_TEMP/release.keystore"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: launcher
+          path: |
+            launcher/build/litelauncher-v*.apk
+            launcher/build/SHA256SUMS
+
+  exe:
+    name: Ejecutable de Windows
+    needs: apk
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v4
+        with:
+          name: launcher
+          path: launcher/build
+      - name: Dejar el APK donde lo espera build_exe.py
+        shell: bash
+        run: cp launcher/build/litelauncher-v*.apk launcher/build/litelauncher.apk
+      - name: Construir el ejecutable
+        shell: bash
+        run: |
+          python -m pip install pyinstaller "./installer"
+          python installer/build_exe.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exe
+          path: installer/dist/tvlite.exe
+
+  publish:
+    name: Publicar release
+    needs: [apk, exe]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: Checksums y publicacion
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd dist
+          cp launcher/litelauncher-v*.apk exe/tvlite.exe .
+          sha256sum litelauncher-v*.apk tvlite.exe > SHA256SUMS
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --generate-notes \
+            litelauncher-v*.apk tvlite.exe SHA256SUMS

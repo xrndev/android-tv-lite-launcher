@@ -1,56 +1,65 @@
-# Contribuir
+# Contributing
 
-Gracias por querer ayudar. Este proyecto toca el software de teles ajenas, así que **la seguridad y la honestidad sobre lo probado van por delante de la cantidad**.
+**English** · [Español](CONTRIBUTING.es.md)
 
-## La forma más útil de ayudar: probar tu tele
+Thanks for wanting to help. This project touches other people's TVs, so **safety and honesty about what is tested come before quantity**.
 
-1. Activa las opciones de desarrollador y la depuración por red (ver el README).
-2. Ejecuta, **sin cambiar nada**:
+## The most useful thing: report your TV
+
+1. Enable developer options and network debugging on the TV (see the README).
+2. Run, **without changing anything**:
    ```bash
-   tvlite detect <ip-de-tu-tele>
-   tvlite plan <ip-de-tu-tele>
-   tvlite apply <ip-de-tu-tele> --dry-run
+   tvlite report <your-tv-ip>
    ```
-3. Abre un issue con la plantilla **Device report** y pega la salida. Con eso entra en [docs/DEVICES.md](docs/DEVICES.md) como *reportado*.
-4. Si además ejecutas `tvlite apply` de verdad, cuéntanos si arrancó bien, si Home abre el launcher nuevo y si `tvlite restore` te devolvió el original.
+   It prints an anonymous report (model, Android, SoC, RAM, which packages `tvlite` would remove, and the vendor system packages that no list covers yet). **Nothing is sent**: read it, then paste it into a **Device report** issue. It contains no serial number, IP, accounts or user-installed apps.
+3. Optionally try the real thing and tell us how it went:
+   ```bash
+   tvlite apply <ip> --dry-run      # shows the plan
+   tvlite apply <ip>                # applies it (backs everything up first)
+   tvlite restore <ip> <backup>     # did it bring the original state back?
+   ```
+   Did it boot fine? Does Home open the new launcher? Did restore bring every package back?
 
-## Añadir una lista de paquetes (otra marca o procesador)
+That goes into [docs/DEVICES.md](docs/DEVICES.md) as *reported*.
 
-Las listas están en [`installer/tvlite/data/packages.json`](installer/tvlite/data/packages.json) y, para contribuciones, en `installer/tvlite/data/community/*.json` (mismo formato, solo la clave `lists`).
+## Adding a package list (another brand or SoC)
 
-Reglas, todas comprobadas por `validate_catalog` y por los tests:
+Lists live in [`installer/tvlite/data/packages.json`](installer/tvlite/data/packages.json) and, for contributions, in `installer/tvlite/data/community/*.json` (same format, just the `lists` key).
 
-- **`verified_on` obligatorio** y con dispositivos **reales** ("Marca Modelo, SoC, Android X"). Sin eso la lista se ignora por defecto. Si no la has probado en una tele física, no pongas `verified_on`: pon `notes` explicando de dónde sale cada paquete.
-- **Nunca** paquetes protegidos (Play Store, GMS, SystemUI, ajustes, proveedores, red, Bluetooth, launcher…). El validador falla si aparecen.
-- **Solo paquetes de sistema.** Quitar una app de usuario no se puede deshacer; si un paquete solo existe como app de usuario en tu tele, no va en la lista.
-- **`tier`** honesto: `safe` (nadie lo notará), `recommended` (prescindible en una tele con poca RAM), `aggressive` (puede quitar una función, y entonces añade `breaks` explicándolo), `optional` (nunca se preselecciona: voz, accesibilidad…).
-- **`match`** lo más estrecho posible (`manufacturer`, `brand`, `model`, `soc`).
-- Prueba la lista **antes** de proponerla, también la restauración:
+Rules, all enforced by `validate_catalog` and the tests:
+
+- **`verified_on` is required** and must name **real** devices ("Brand Model, SoC, Android X"). Without it the list is ignored by default. If you have not tried it on a physical TV, do not set `verified_on`: set `notes` explaining where each package comes from.
+- **Never** protected packages (Play Store, GMS, SystemUI, settings, providers, networking, Bluetooth, launchers…). The validator fails if one appears.
+- **`tier`** honestly: `safe` (nobody will notice), `recommended` (dispensable on a low-RAM TV), `aggressive` (may remove a feature, so add `breaks` explaining it), `optional` (never preselected: voice, accessibility…).
+- **`match`** as narrow as possible (`manufacturer`, `brand`, `model`, `soc`).
+- System apps are removed and restored with `install-existing`. If a package is a *user* app on your TV, `tvlite` saves its APK first so it can be restored; say so in the PR.
+- Test the list **before** proposing it, including restore:
   ```bash
-  TVLITE_EXTRA_LISTS=mi_lista.json tvlite plan <ip>
-  TVLITE_EXTRA_LISTS=mi_lista.json tvlite apply <ip> --only paquete.uno,paquete.dos
-  tvlite restore <ip> <carpeta-del-backup>
+  TVLITE_EXTRA_LISTS=my_list.json tvlite plan <ip>
+  TVLITE_EXTRA_LISTS=my_list.json tvlite apply <ip> --only package.one,package.two
+  tvlite restore <ip> <backup-folder>
   ```
-- Indica en el PR el resultado de `tvlite restore`: ¿volvió cada paquete?
+- State the result of `tvlite restore` in the PR: did every package come back?
 
-## Código
+## Code
 
 ```bash
 cd installer
 pip install -e ".[dev]"
-python -m pytest                       # unitarias, con FakeAdb (sin hardware)
+python -m pytest                       # unit tests, with FakeAdb (no hardware)
 ```
 
-- Toda la interacción con Android pasa por `tvlite/android.py` y se simula en `tests/fake_adb.py`. Si añades un comando nuevo, enséñaselo al `FakeAdb`.
-- Prueba los **fallos**, no solo el camino feliz (launcher roto, tele que no responde, app que no se restaura).
-- Si cambias algo de seguridad (protegidos, reversibilidad, restauración), comprueba que tu cambio **hace fallar** un test al quitarlo (una prueba de mutación manual vale).
-- La interfaz gráfica es una capa fina: la lógica va en el núcleo, donde se puede probar sin pantalla. En Tkinter, **no accedas a variables de Tk desde hilos**.
-- Pruebas contra emulador: ver README → *Emuladores de Android TV*. Si añades un perfil, añade su fila a `docs/DEVICES.md` solo cuando lo hayas ejecutado.
+- Every interaction with Android goes through `tvlite/android.py` and is simulated in `tests/fake_adb.py`. If you add a command, teach it to `FakeAdb`.
+- Test the **failures**, not just the happy path (broken launcher, TV that stops answering, lost connection, app that does not restore).
+- If you change something safety-related (protected packages, reversibility, restore), check that your change **makes a test fail when you remove it** (a manual mutation check is enough).
+- The GUI is a thin layer: logic goes in the core, where it can be tested without a screen. In Tkinter, **never touch Tk variables from threads**.
+- Emulator tests: see the README → *Android TV emulators*. Add a row to `docs/DEVICES.md` only after you have actually run the profile.
+- Comments in the code are mostly Spanish; English is welcome for new code.
 
-## Honestidad sobre lo probado
+## Honesty about what is tested
 
-No marques un dispositivo como *probado* si solo lo has visto en emulador, ni una app como `verified` si no has visto su paquete en una tele real. La tabla de [docs/DEVICES.md](docs/DEVICES.md) separa **hardware real**, **emulado** y **reportado** a propósito.
+Do not mark a device as *tested* if you only saw it in an emulator, or an app as `verified` if you have not seen its package on a real TV. The table in [docs/DEVICES.md](docs/DEVICES.md) separates **real hardware**, **emulated** and **reported** on purpose.
 
-## Licencia
+## License
 
-Al contribuir aceptas que tu aportación se publique bajo [Apache-2.0](LICENSE).
+By contributing you agree your contribution is published under [Apache-2.0](LICENSE).

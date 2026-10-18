@@ -1,5 +1,5 @@
 {
-  "_doc": "Fixtures de 'marca' para el emulador. Instalan APK vacios (stubs, que son apps de USUARIO) con los nombres de paquete indicados y, junto a TVLITE_SIMULATE, hacen que tvlite crea que la tele es de esa marca. 'tcl' usa nombres REALES vistos en una TCL; 'acme' usa nombres SINTETICOS: prueba el mecanismo (coincidencia de marca, niveles, listas externas), no la cobertura de una marca real. Como los stubs son apps de usuario, quitarlas NO es reversible: por defecto tvlite no las toca (expect_kept) y solo con allow_irreversible se quitan (expect_removed_forced). 'system_removed' son paquetes de sistema REALES de la imagen del emulador que las listas si quitan y restauran.",
+  "_doc": "Fixtures de 'marca' para el emulador. Instalan APK vacios (stubs, que son apps de USUARIO) con los nombres de paquete indicados y, junto a TVLITE_SIMULATE, hacen que tvlite crea que la tele es de esa marca. 'tcl' usa nombres REALES vistos en una TCL; 'acme' usa nombres SINTETICOS: prueba el mecanismo (coincidencia de marca, niveles, listas externas), no la cobertura de una marca real. Como los stubs son apps de usuario, tvlite guarda su APK antes de quitarlas y la restauracion las reinstala. 'system_removed' son paquetes de sistema REALES de la imagen del emulador que las listas si quitan y restauran. 'expect_removed' son los stubs que el plan quita por defecto; 'expect_kept' lo que debe quedarse.",
   "fixtures": {
     "tcl": {
       "simulate": {"manufacturer": "TCL", "brand": "TCL", "model": "Smart TV (simulada)", "soc": "mt5867"},
@@ -12,8 +12,8 @@
         "com.android.printspooler", "com.android.htmlviewer", "com.android.soundpicker",
         "com.android.backupconfirm", "com.android.wallpaperbackup"
       ],
-      "expect_kept": ["com.tcl.esticker", "com.tcl.hearaid", "com.android.vending", "com.google.android.katniss"],
-      "expect_removed_forced": ["com.tcl.esticker", "com.tcl.hearaid", "com.tcl.messagebox", "com.tcl.dashboard", "com.google.android.play.games"]
+      "expect_removed": ["com.tcl.esticker", "com.tcl.hearaid", "com.tcl.messagebox", "com.tcl.dashboard"],
+      "expect_kept": ["com.android.vending", "com.google.android.katniss"]
     },
     "acme": {
       "simulate": {"manufacturer": "AcmeTV", "brand": "Acme", "model": "Acme X1 (sintetica)", "soc": "acme9000"},
@@ -21,8 +21,8 @@
       "protected_stubs": ["com.android.vending"],
       "extra_list": "fixtures/acme_list.json",
       "system_removed": ["com.android.printspooler"],
-      "expect_kept": ["fixture.acme.promo", "fixture.acme.ads", "fixture.acme.core", "com.android.vending"],
-      "expect_removed_forced": ["fixture.acme.promo", "fixture.acme.ads"]
+      "expect_removed": ["fixture.acme.promo", "fixture.acme.ads"],
+      "expect_kept": ["fixture.acme.core", "com.android.vending"]
     }
   }
 }

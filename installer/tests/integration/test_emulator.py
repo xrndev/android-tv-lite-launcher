@@ -71,9 +71,13 @@ def test_detect_reports_real_emulator_values(adb):
     print("\n" + device.describe(info))
 
 
+def test_memory_snapshot_on_a_real_device(adb):
+    snap = android.memory_snapshot(adb)
+    assert snap["ram_total_mb"] > 0 and 0 < snap["ram_available_mb"] <= snap["ram_total_mb"] and snap["packages"] > 10
+
+
 @pytest.mark.parametrize("fixture_name", ["tcl", "acme"])
-@pytest.mark.parametrize("forced", [False, True], ids=["default", "allow-irreversible"])
-def test_full_flow_and_restore(adb, emu, monkeypatch, tmp_path, fixture_name, forced):
+def test_full_flow_and_restore(adb, emu, monkeypatch, tmp_path, fixture_name):
     fx = emu.install_fixture(fixture_name)
     simulate(monkeypatch, fx)
     info = device.detect(adb, serial=SERIAL)
@@ -84,37 +88,43 @@ def test_full_flow_and_restore(adb, emu, monkeypatch, tmp_path, fixture_name, fo
     original = android.list_packages(adb)
     original_home = android.package_of(android.resolve_home(adb))
 
-    plan = debloat.build_plan(
-        info, original, system_packages=android.list_system_packages(adb), allow_irreversible=forced
-    )
-    options = runner.Options(
-        debloat_packages={i.pkg for i in plan if i.selected}, allow_irreversible=forced, launcher_apk=apk
-    )
+    plan = debloat.build_plan(info, original, system_packages=android.list_system_packages(adb))
+    options = runner.Options(debloat_packages={i.pkg for i in plan if i.selected}, launcher_apk=apk)
+    stay_before = android.get_setting(adb, "global", android.STAY_ON_KEY)
+    verify_before = android.get_setting(adb, "global", android.VERIFY_ADB_KEY)
     summary = runner.run(adb, info, options, backup_base=tmp_path / "bk")
     try:
+        assert not summary.error, summary.error
         after = android.list_packages(adb)
         for pkg in fx["system_removed"]:
             if pkg in original:  # solo si esa imagen de Android lo trae
                 assert pkg not in after, f"{pkg} (sistema) deberia haberse quitado"
-        removed_user = fx["expect_removed_forced"] if forced else []
-        for pkg in removed_user:
-            assert pkg not in after, f"{pkg} deberia haberse quitado con --allow-irreversible"
+        for pkg in fx["expect_removed"]:
+            assert pkg not in after, f"{pkg} (app de usuario) deberia haberse quitado"
         for pkg in fx["expect_kept"]:
-            if pkg not in removed_user:
-                assert pkg in after, f"{pkg} deberia conservarse"
+            assert pkg in after, f"{pkg} deberia conservarse"
+        # Las apps de usuario quitadas tienen su APK guardado en el backup.
+        saved = [e for e in restore.Journal(summary.backup_dir).entries() if e["action"] == "debloat_user_app"]
+        assert {e["target"] for e in saved} >= {p for p in fx["expect_removed"] if p in original}
+        assert all((summary.backup_dir / e["reverse"]["dir"] / n).is_file() for e in saved for n in e["reverse"]["files"])
         assert not summary.launcher_error, summary.launcher_error
         assert android.package_of(android.resolve_home(adb)) == launcher.LITE_PKG
+        assert summary.metrics_before and summary.metrics_after
+        # Los ajustes temporales (tele despierta, verificacion de Play Protect) no dejan rastro.
+        assert android.get_setting(adb, "global", android.STAY_ON_KEY) == stay_before
+        assert android.get_setting(adb, "global", android.VERIFY_ADB_KEY) == verify_before
     finally:
         result = restore.restore(adb, summary.backup_dir)
 
     after_restore = android.list_packages(adb)
-    assert result.ok, result  # las apps de usuario quitadas no estan en el diario como reversibles
+    assert result.ok, result
     assert launcher.LITE_PKG not in after_restore
-    # Todo lo de sistema vuelve; lo de usuario quitado a la fuerza no (hay que reinstalarlo).
-    forced_removed = {i.pkg for i in plan if i.selected and not i.system}
-    assert (original - {launcher.LITE_PKG} - forced_removed) <= after_restore
+    # TODO lo original vuelve, tambien las apps de usuario (reinstaladas desde su APK guardado).
+    assert original - {launcher.LITE_PKG} <= after_restore
+    for pkg in fx["expect_removed"]:
+        if pkg in original:
+            assert android.package_exists(adb, pkg), f"{pkg} deberia ser un paquete real, no un registro fantasma"
     assert android.package_of(android.resolve_home(adb)) == original_home
-    emu.install_fixture(fixture_name)  # deja el emulador como estaba para la siguiente prueba
 
 
 def test_dry_run_changes_nothing_on_real_device(adb, emu, monkeypatch, tmp_path):
@@ -122,6 +132,16 @@ def test_dry_run_changes_nothing_on_real_device(adb, emu, monkeypatch, tmp_path)
     simulate(monkeypatch, fx)
     info = device.detect(adb, serial=SERIAL)
     before = android.list_packages(adb)
-    plan = debloat.build_plan(info, before, system_packages=android.list_system_packages(adb), allow_irreversible=True)
+    plan = debloat.build_plan(info, before, system_packages=android.list_system_packages(adb))
     runner.run(adb, info, runner.Options(debloat_packages={i.pkg for i in plan}, dry_run=True), backup_base=tmp_path)
     assert android.list_packages(adb) == before
+
+
+def test_report_on_a_real_device_lists_vendor_packages_without_user_apps(adb, emu, monkeypatch):
+    from tvlite import report
+
+    fx = emu.install_fixture("tcl")
+    simulate(monkeypatch, fx)
+    text = report.build_report(adb, device.detect(adb, serial=SERIAL))
+    assert "TV report" in text and "candidates for a new list" in text
+    assert "com.tcl.esticker" in text  # sale en el plan

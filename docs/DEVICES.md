@@ -1,54 +1,61 @@
-# Teles y entornos probados
+# Tested TVs and environments
 
-Esta tabla solo recoge lo que **se ha probado de verdad**. Tres niveles de confianza:
+**English** · [Español](DEVICES.es.md)
 
-| Nivel | Significa |
+This table only lists what **has actually been tested**. Three confidence levels:
+
+| Level | Meaning |
 |---|---|
-| **Hardware real** | Alguien ejecutó la herramienta (o los mismos comandos) en una tele física y comprobó el resultado. |
-| **Emulado** | Pasa la suite de integración en un emulador de Android TV. Valida la lógica, no el hardware. |
-| **Reportado** | Un usuario informó (con el formulario de [Device report](../.github/ISSUE_TEMPLATE/device_report.yml)) de que funciona, sin que lo hayamos reproducido. |
+| **Real hardware** | Someone ran the tool (or the same commands) on a physical TV and checked the result. |
+| **Emulated** | Passes the integration suite on an Android TV emulator. Validates the logic, not the hardware. |
+| **Reported** | A user reported (with the [Device report](../.github/ISSUE_TEMPLATE/device_report.yml) form) that it works, without us having reproduced it. |
 
-## Hardware real
+## Real hardware
 
-| Marca / modelo | SoC | RAM | Android | ABI | Qué se probó | Resultado | Fecha |
+| Brand / model | SoC | RAM | Android | ABI | What was tested | Result | Date |
 |---|---|---|---|---|---|---|---|
-| TCL Smart TV | MediaTek mt5867 | 940 MB | 11 (API 30) | armeabi-v7a | Debloat (unas decenas de paquetes de Google, AOSP y TCL; no se anotó cuáles eran de sistema y cuáles de usuario), Lite Launcher como inicio (el launcher de Google hubo que **desactivarlo**: Android lo seguía eligiendo pese al rol HOME), Stremio, NordVPN y Red Bull TV desde Play Store, animaciones a 0. Todo aplicado **a mano** con los mismos comandos que automatiza `tvlite`. | Funciona. RAM libre ~250 → ~350–450 MB; el launcher usa ~40 MB frente a ~130 MB. | 2026-10 |
+| TCL Smart TV | MediaTek mt5867 | 940 MB | 11 (API 30) | armeabi-v7a | Debloat (a few dozen Google, AOSP and TCL packages; it was not recorded which were system and which user apps), Lite Launcher as home (the Google launcher had to be **disabled**: Android kept choosing it despite the HOME role), Stremio, NordVPN and Red Bull TV from Play Store, animations at 0. All applied **by hand** with the same commands `tvlite` automates. | Works. Free RAM ~250 → ~350–450 MB; the launcher uses ~40 MB versus ~130 MB. | 2026-10 |
 
-> `tvlite` (el instalador automático) **no se ha ejecutado todavía en una tele física**. Si lo pruebas, abre un Device report.
+**`tvlite` itself on this TV (2026-10-18):** `detect`, `plan`, `report`, `metrics` and `apply --dry-run` worked as expected (the plan was empty because the TV was already cleaned by hand). A **real run** removed one user app, Red Bull TV, which ships as 4 APKs (base + 3 splits): all 4 were saved to the backup, the temporary settings (stay-awake, Play Protect) were restored, and `restore` reinstalled the app from the saved APKs (5 restorations, 0 failures); it launched with no crash. This is exactly the case that broke the first time by hand.
 
-Hallazgos de esta tele que han dado forma al diseño:
+> **Not yet exercised on real hardware with `tvlite`:** a full debloat from a stock state, the launcher switch, and app installs from Play Store. If you try it on another TV, open a Device report (`tvlite report <ip>` produces the text).
 
-- `pm uninstall -k --user 0` solo es reversible en apps de **sistema**; en apps de usuario el APK se borra y `install-existing` deja un registro fantasma.
-- En esta tele, asignar el rol HOME **no bastó**: hubo que desactivar el launcher de Google (`pm disable-user`).
-- La mayoría de las apps que ocupaban RAM eran Google Play Services y Play Store (~260 MB), que se conservan.
-- El `load average` (~47) se queda alto en reposo por hilos del kernel del chip de vídeo en estado "D"; es normal en esta tele y no indica un problema.
+Findings from this TV that shaped the design:
 
-## Emulado
+- `pm uninstall -k --user 0` is only reversible for **system** apps; for user apps the APK is deleted and `install-existing` leaves a ghost record. (`tvlite` now saves a user app's APK first.)
+- On this TV, assigning the HOME role **was not enough**: the Google launcher had to be disabled (`pm disable-user`).
+- Most of the RAM was Google Play Services and Play Store (~260 MB), which are kept.
+- The load average (~47) stays high at idle because of video-chip kernel threads in "D" state; that is normal on this TV and not a problem.
+- The TV drops off the network when it goes to standby, which is why `tvlite` keeps it awake and reconnects.
 
-Perfiles de [`tools/emulator/profiles.json`](../tools/emulator/profiles.json). Suite: `installer/tests/integration` (6 pruebas: detección, flujo completo y restauración con fixtures `tcl` y `acme` en modo por defecto y `--allow-irreversible`, y `--dry-run`).
+## Emulated
 
-| Perfil | Android | RAM | ABI | Estado |
+Profiles in [`tools/emulator/profiles.json`](../tools/emulator/profiles.json). Suite: `installer/tests/integration` (detection, memory snapshot, full flow and restore with the `tcl` and `acme` fixtures, `--dry-run`, and the anonymous report).
+
+| Profile | Android | RAM | ABI | Status |
 |---|---|---|---|---|
-| `atv9-1gb` | 9 (API 28) | 1 GB | x86 | 6/6 pruebas pasan (2026-10-18). Ruta de launcher sin roles (`set-home-activity`). |
-| `atv11-1gb` | 11 (API 30) | 1 GB | x86 | 6/6 pruebas pasan (2026-10-18). |
-| `atv14-2gb` | 14 (API 34) | 2 GB | x86 | 6/6 pruebas pasan (2026-10-18), tras corregir lo de Play Protect (ver abajo). |
-| `atv11-2gb`, `atv14-4gb` | 11 / 14 | 2 / 4 GB | x86 | definidos, sin ejecutar (el perfil `normal` solo está cubierto por pruebas unitarias). |
+| `atv9-1gb` | 9 (API 28) | 1 GB | x86 | 6/6 pass (2026-10-18). No-roles launcher path (`set-home-activity`). |
+| `atv11-1gb` | 11 (API 30) | 1 GB | x86 | 6/6 pass (2026-10-18). |
+| `atv14-2gb` | 14 (API 34) | 2 GB | x86 | 6/6 pass (2026-10-18), including Play Protect. |
+| `atv11-2gb`, `atv14-4gb` | 11 / 14 | 2 / 4 GB | x86 | defined, not run (the `normal` profile is only covered by unit tests). |
 
-Hallazgos del emulador que han cambiado el código:
+Emulator findings that changed the code:
 
-- **Play Protect (Android 14 con Play Store):** al instalar un APK desconocido por ADB aparece un diálogo en pantalla y la instalación se queda esperando indefinidamente (en la TCL real no ocurrió). Ahora `tvlite` desactiva **solo** `verifier_verify_adb_installs` durante la instalación de sus APK, lo anota en el diario y lo devuelve siempre a su valor original.
-- **Apps de usuario no restaurables:** el emulador reprodujo el "registro fantasma" de `install-existing` que ya se había visto en la TCL con Red Bull TV (ver arriba).
-- **Android 14 exige `targetSdk` ≥ 23** para instalar un APK; y ya trae paquetes de sistema (p. ej. Play Juegos) con nombres que usan los fixtures.
+- **Play Protect (Android 14 with Play Store):** installing an unknown APK over ADB shows an on-screen dialog and the install waits forever (it did not happen on the real TCL). `tvlite` now disables **only** `verifier_verify_adb_installs` while installing its APKs, journals it and always restores the original value.
+- **User apps are not restorable by `install-existing`:** the emulator reproduced the "ghost record" first seen on the TCL with Red Bull TV. Restore now reinstalls them from the APK saved in the backup, and the integration test checks the package is real afterwards.
+- **Android 14 requires `targetSdk` ≥ 23** to install an APK, and ships system packages (e.g. Play Games) whose names the fixtures also use.
 
-Qué **no** cubre el emulador: la GPU y el SoC reales, los paquetes específicos de cada fabricante (los fixtures solo crean apps vacías con esos nombres), ni el comportamiento de Play Store (la imagen `android-tv` no la incluye).
+What the emulator does **not** cover: the real GPU and SoC, vendor-specific packages (fixtures only create empty apps with those names), nor the behavior of Play Store apps with `tvlite` (the `android-tv` images for API 28/30 do not include Play Store).
 
-## Reportado por usuarios
+Unit tests (74 plus 6 integration) run against a simulated TV (`installer/tests/fake_adb.py`).
 
-_Aún ninguno._ Añade el tuyo abriendo un issue con la plantilla *Device report* y pegando la salida de `tvlite detect <ip>`.
+## Reported by users
 
-## Procesadores probados
+_None yet._ Add yours by opening an issue with the *Device report* template and pasting the output of `tvlite report <ip>`.
 
-| SoC | Nivel |
+## SoCs tested
+
+| SoC | Level |
 |---|---|
-| MediaTek mt5867 | Hardware real |
-| x86 (emulador Android TV) | Emulado |
+| MediaTek mt5867 | Real hardware |
+| x86 (Android TV emulator) | Emulated |

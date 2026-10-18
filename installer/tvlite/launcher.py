@@ -83,6 +83,11 @@ def activate(
     progress("Instalando el launcher nuevo")
     with android.adb_verification_off(adb, journal):
         res = adb.install(apk)
+        if "INSTALL_FAILED_UPDATE_INCOMPATIBLE" in (res.stdout + res.stderr):
+            # Ya habia un Lite Launcher firmado con otra clave: no se puede actualizar encima.
+            progress("Hay un Lite Launcher con otra firma: se reinstala (se pierden solo sus ajustes: orden y apps ocultas)")
+            adb.uninstall(LITE_PKG)
+            res = adb.install(apk)
     if not res.ok or "Success" not in res.stdout:
         raise LauncherError(f"No se pudo instalar el launcher: {res.stdout or res.stderr}")
     journal.record("launcher_install", LITE_PKG, reverse={"op": "uninstall", "pkg": LITE_PKG})

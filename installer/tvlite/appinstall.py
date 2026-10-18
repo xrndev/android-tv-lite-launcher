@@ -8,6 +8,8 @@
 
 from __future__ import annotations
 
+import datetime
+import hashlib
 import json
 import re
 import urllib.request
@@ -36,13 +38,41 @@ def load_apps() -> dict:
     return json.loads((DATA / "apps.json").read_text(encoding="utf-8"))
 
 
-def pick_apk_url(app: dict, abis: list[str]) -> Optional[str]:
-    """Elige la variante de APK segun las ABI de la tele (en su orden de preferencia)."""
+def pick_apk(app: dict, abis: list[str]) -> Optional[tuple[str, str]]:
+    """Elige (abi, url) de la variante de APK segun las ABI de la tele (en su orden de preferencia)."""
     variants = app.get("apk") or {}
     for abi in abis:
         if abi in variants:
-            return variants[abi]
+            return abi, variants[abi]
     return None
+
+
+def pick_apk_url(app: dict, abis: list[str]) -> Optional[str]:
+    picked = pick_apk(app, abis)
+    return picked[1] if picked else None
+
+
+def sha256_of(path: Path) -> str:
+    digest = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for block in iter(lambda: fh.read(1 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+STALE_AFTER_DAYS = 365
+
+
+def stale_warning(app: dict, today: Optional[datetime.date] = None) -> str:
+    """Aviso si la version fijada de una app se comprobo hace mas de un ano."""
+    checked = app.get("checked")
+    if not checked or not app.get("sha256"):
+        return ""
+    age = ((today or datetime.date.today()) - datetime.date.fromisoformat(checked)).days
+    if age <= STALE_AFTER_DAYS:
+        return ""
+    return (f"{app['name']} {app.get('version', '')} se fijo hace {age} dias: puede haber una version mas "
+            "reciente (el instalador sigue usando la fijada y verificada)")
 
 
 def ui_texts(adb) -> list[str]:
@@ -59,9 +89,13 @@ def _has_install_button(texts: list[str]) -> bool:
 
 
 def install_apk(adb, app: dict, abis: list[str], journal: Journal, progress, downloader=None) -> AppResult:
-    url = pick_apk_url(app, abis)
-    if not url:
+    picked = pick_apk(app, abis)
+    if not picked:
         return AppResult(app["id"], False, "No hay APK oficial para la arquitectura de esta tele")
+    abi, url = picked
+    warning = stale_warning(app)
+    if warning:
+        progress(warning)
     dest = data_dir() / "downloads" / f"{app['id']}.apk"
     dest.parent.mkdir(parents=True, exist_ok=True)
     progress(f"Descargando {app['name']} ({url})")
@@ -69,6 +103,14 @@ def install_apk(adb, app: dict, abis: list[str], journal: Journal, progress, dow
         (downloader or urllib.request.urlretrieve)(url, dest)
     except OSError as exc:
         return AppResult(app["id"], False, f"Descarga fallida: {exc}")
+    expected = (app.get("sha256") or {}).get(abi)
+    if expected and sha256_of(dest).lower() != expected.lower():
+        dest.unlink(missing_ok=True)
+        return AppResult(
+            app["id"], False,
+            "El APK descargado no coincide con el SHA-256 verificado (descarga corrupta o version nueva "
+            "no verificada): no se instala",
+        )
     with android.adb_verification_off(adb, journal):
         res = adb.install(dest)
     ok = res.ok and "Success" in res.stdout

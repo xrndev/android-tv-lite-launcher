@@ -6,30 +6,51 @@ import argparse
 import sys
 from pathlib import Path
 
-from . import android, appinstall, debloat, device as devmod, runner
+from . import android, appinstall, debloat, device as devmod, report as reportmod, runner
 from .adb import Adb, AdbError, data_dir, ensure_adb
+from .i18n import default_language, translate, translate_message
 from .restore import restore
 
 
+def _say(message: str) -> None:
+    """Imprime un mensaje del nucleo en el idioma del sistema."""
+    print(translate_message(default_language(), message))
+
+
 def _adb(args) -> Adb:
-    return Adb(ensure_adb(print))
+    return Adb(ensure_adb(_say))
 
 
 def _connect(args):
     adb = _adb(args)
-    info = runner.connect(adb, args.ip, print)
+    info = runner.connect(adb, args.ip, _say)
     return adb, info
 
 
 def cmd_detect(args) -> int:
     adb, info = _connect(args)
-    print(devmod.describe(info))
+    print(devmod.describe(info, default_language()))
+    return 0
+
+
+def cmd_report(args) -> int:
+    adb, info = _connect(args)
+    print(reportmod.build_report(adb, info))
+    print("(Revisa el informe antes de pegarlo en un issue. No se ha enviado nada.)", file=sys.stderr)
+    return 0
+
+
+def cmd_metrics(args) -> int:
+    adb, _ = _connect(args)
+    m = android.memory_snapshot(adb)
+    print(f"RAM: {m['ram_available_mb']} MB disponibles de {m['ram_total_mb']} MB | swap usado: {m['swap_used_mb']} MB | "
+          f"paquetes: {m['packages']}")
     return 0
 
 
 def cmd_plan(args) -> int:
     adb, info = _connect(args)
-    print(devmod.describe(info), "\n")
+    print(devmod.describe(info, default_language()), "\n")
     plan = debloat.build_plan(
         info, android.list_packages(adb), include_unverified=args.include_unverified,
         system_packages=android.list_system_packages(adb),
@@ -39,7 +60,7 @@ def cmd_plan(args) -> int:
     for item in plan:
         mark = "[x]" if item.selected else "[ ]"
         warn = f"  (!) {item.breaks}" if item.breaks else ""
-        flag = ("" if item.verified else " [sin verificar]") + ("" if item.system else " [NO reversible]")
+        flag = ("" if item.verified else " [sin verificar]") + ("" if item.system else " [app de usuario: se guarda su APK]")
         print(f"{mark} {item.pkg:55} {item.label}{flag}{warn}")
     return 0
 
@@ -48,13 +69,13 @@ def cmd_apply(args) -> int:
     adb, info = _connect(args)
     plan = debloat.build_plan(
         info, android.list_packages(adb), include_unverified=args.include_unverified,
-        system_packages=android.list_system_packages(adb), allow_irreversible=args.allow_irreversible,
+        system_packages=android.list_system_packages(adb),
     )
     chosen = {i.pkg for i in plan if i.selected} if not args.only else set(args.only.split(","))
     if args.no_debloat:
         chosen = set()
     apps = [a for a in (args.apps or "").split(",") if a]
-    print(devmod.describe(info))
+    print(devmod.describe(info, default_language()))
     print(f"\nSe quitaran {len(chosen)} paquetes, se instalaran {len(apps)} apps"
           f"{'' if args.no_launcher else ' y se cambiara el launcher'}.")
     if not args.yes and not args.dry_run and input("Continuar? [s/N] ").strip().lower() not in ("s", "si", "y", "yes"):
@@ -65,19 +86,27 @@ def cmd_apply(args) -> int:
         dry_run=args.dry_run, include_unverified=args.include_unverified,
         allow_irreversible=args.allow_irreversible,
     )
-    summary = runner.run(adb, info, opts, progress=print)
+    summary = runner.run(adb, info, opts, progress=_say)
     print(f"\nCopia de seguridad: {summary.backup_dir}")
+    line = runner.format_metrics(summary.metrics_before, summary.metrics_after)
+    if line:
+        print(line)
+    if summary.error:
+        _say(summary.error)
+        print(translate(default_language(), "connection_lost_hint"))
     if summary.launcher_error:
-        print(f"Launcher: {summary.launcher_error}")
+        _say(f"Launcher: {summary.launcher_error}")
     failed = [a for a in summary.apps if not a.ok]
     for app in failed:
         print(f"No se pudo instalar {app.app_id}: {app.detail}")
-    return 1 if (summary.launcher_error or failed or (summary.debloat and summary.debloat.aborted)) else 0
+    if not args.dry_run:
+        print("\n" + translate(default_language(), "finish_security"))
+    return 1 if (summary.error or summary.launcher_error or failed or (summary.debloat and summary.debloat.aborted)) else 0
 
 
 def cmd_restore(args) -> int:
     adb, _ = _connect(args)
-    result = restore(adb, Path(args.backup), print, include_apps=args.include_apps)
+    result = restore(adb, Path(args.backup), _say, include_apps=args.include_apps)
     print(f"Restaurado: {len(result.restored)}; fallos: {len(result.failed)}")
     return 0 if result.ok else 1
 
@@ -92,7 +121,8 @@ def cmd_backups(args) -> int:
 def cmd_apps(args) -> int:
     data = appinstall.load_apps()
     for app in data["apps"]:
-        print(f"{app['id']:12} {data['categories'][app['category']]:22} {app['name']}")
+        extra = f"  v{app['version']} (verificada {app['checked']}, SHA-256 fijado)" if app.get("sha256") else ""
+        print(f"{app['id']:12} {data['categories'][app['category']]:22} {app['name']}{extra}")
     return 0
 
 
@@ -112,6 +142,8 @@ def build_parser() -> argparse.ArgumentParser:
         return p
 
     with_ip(sub.add_parser("detect", help="muestra que tele es")).set_defaults(func=cmd_detect)
+    with_ip(sub.add_parser("report", help="informe anonimo para pegar en un issue (no se envia nada)")).set_defaults(func=cmd_report)
+    with_ip(sub.add_parser("metrics", help="RAM disponible y paquetes ahora mismo")).set_defaults(func=cmd_metrics)
     p = with_ip(sub.add_parser("plan", help="muestra que se quitaria, sin tocar nada"))
     p.add_argument("--include-unverified", action="store_true")
     p.set_defaults(func=cmd_plan)
@@ -124,7 +156,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--no-launcher", action="store_true")
     p.add_argument("--include-unverified", action="store_true")
     p.add_argument("--allow-irreversible", action="store_true",
-                   help="permite quitar apps de usuario (no se pueden restaurar; hay que reinstalarlas)")
+                   help="quita apps de usuario aunque no se pueda guardar su APK (no se podran restaurar)")
     p.set_defaults(func=cmd_apply)
     p = with_ip(sub.add_parser("restore", help="deshace los cambios de una copia de seguridad"))
     p.add_argument("backup", help="carpeta de la copia (ver 'tvlite backups')")

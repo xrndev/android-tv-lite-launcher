@@ -1,137 +1,146 @@
 # android-tv-lite-launcher
 
-Optimiza una Android TV con poca RAM, **de forma reversible**: limpia el software que sobra, instala un launcher ligero y las apps que elijas, todo por ADB desde el PC. Pensado para que el usuario haga lo mínimo.
+**English** · [Español](README.es.md)
 
-> **Estado: alfa.** Las listas de paquetes y el launcher se probaron en **una** tele real (TCL, Android 11, 940 MB de RAM). El instalador (`tvlite`) está probado con una tele simulada y con emuladores de Android TV, **pero todavía no se ha ejecutado contra una tele física**. Ver [qué está probado](#qué-está-probado).
+Optimize a low-RAM Android TV **reversibly**: remove the software you don't need, install a tiny launcher and the apps you choose, all over ADB from your PC. Designed so the user has to do as little as possible.
 
-![Home de la tele con Lite Launcher y 9 apps](docs/img/launcher-home.png)
+> **Status: alpha.** The package lists and the launcher were tested on **one** real TV (TCL, Android 11, 940 MB of RAM). The installer (`tvlite`) is tested against a simulated TV and Android TV emulators, and on that same TV only partially: read-only commands, a dry run and one real remove-and-restore of a user app. **A full cleanup from a stock state, the launcher switch and Play Store installs have not been exercised on real hardware with `tvlite` yet.** See [what is tested](#what-is-tested).
 
-*Resultado final: la Home de una tele de 940 MB de RAM con Lite Launcher y 9 apps (Play Store siempre la primera). Captura de una tele real.*
+![TV home screen with Lite Launcher and 9 apps](docs/img/launcher-home.png)
 
-*English: reversible optimizer for low-RAM Android TVs over ADB — safe debloat, a tiny native launcher and popular apps. Alpha; Spanish docs, contributions welcome.*
+*End result: the home screen of a 940 MB TV with Lite Launcher and 9 apps (Play Store always first). Screenshot from a real TV.*
 
-## Qué hace
+## What it does
 
-1. **Detecta tu tele** (marca, modelo, Android, procesador, RAM) y elige un perfil: `ultra_low` (≤ 1,2 GB), `low` (≤ 2,2 GB) o `normal`.
-2. **Guarda un backup** de cómo está la tele antes de tocar nada (paquetes, launcher, ajustes).
-3. **Limpia (debloat)** solo paquetes de listas revisadas, por niveles según la RAM. Play Store, Google Play Services y el sistema están protegidos.
-4. **Instala apps** que elijas: streaming populares, Stremio y VPN.
-5. **Cambia el launcher** por [Lite Launcher](launcher/) (16 KB, nativo, sin animaciones), comprobando antes que arranca. El launcher original **no se desinstala**: se desactiva solo si hace falta.
-6. **Restaura** todo desde el backup si algo no te gusta o falla.
+1. **Detects your TV** (brand, model, Android, SoC, RAM) and picks a profile: `ultra_low` (≤ 1.2 GB), `low` (≤ 2.2 GB) or `normal`.
+2. **Saves a backup** of the original state before touching anything: package lists, launcher, settings and the **APK of every user app it removes**.
+3. **Debloats** only packages from reviewed lists, in tiers according to RAM. Play Store, Google Play Services and the core system are protected.
+4. **Installs the apps you pick**: popular streaming apps, Stremio and VPNs. Fully automatic: no extra clicks on the TV.
+5. **Switches the launcher** to [Lite Launcher](launcher/) (tiny, native, no animations), checking first that it opens. The original launcher is **never uninstalled**: it is only disabled if needed.
+6. **Restores** everything from the backup if you don't like the result or something fails.
+7. **Keeps the TV awake and reconnects** by itself if the Wi-Fi drops or the TV falls asleep mid-process.
+8. **Measures before and after** (available RAM, package count) so you can see what changed.
+9. **Verifies downloads** (ADB tools against Google's published checksum, Stremio against a pinned SHA-256).
 
-## Uso
+## Usage
 
-Necesitas Python 3.9+ (con Tkinter) en el PC. Todavía no hay ejecutable publicado: ver [Desarrollo](#desarrollo).
+You need Python 3.9+ (with Tkinter) on the PC. There is no published executable yet: see [Development](#development).
 
 ```bash
 pip install ./installer
-tvlite gui                       # asistente gráfico (o doble clic en el ejecutable, cuando exista)
-tvlite plan 192.168.1.50         # ver qué se quitaría, sin tocar nada
+tvlite gui                       # graphical wizard (or double-click the executable, once it exists)
+tvlite plan 192.168.1.50         # see what would be removed, without touching anything
 tvlite apply 192.168.1.50 --dry-run
 tvlite apply 192.168.1.50 --apps stremio,nordvpn
-tvlite backups                   # copias de seguridad guardadas
-tvlite restore 192.168.1.50 <carpeta-del-backup>
+tvlite metrics 192.168.1.50      # available RAM and packages right now
+tvlite report 192.168.1.50       # anonymous report to paste in a GitHub issue (nothing is sent)
+tvlite backups                   # saved backups
+tvlite restore 192.168.1.50 <backup-folder>
 ```
 
-**Antes de empezar, activa las opciones de desarrollador en la tele** (el asistente lo explica paso a paso): *Ajustes → Preferencias del dispositivo → Acerca de → pulsa 7 veces en "Compilación"*, y luego activa la depuración USB y la **depuración por red** (en Android 11+ puede llamarse *Depuración inalámbrica* y pedir un código de emparejamiento). El PC y la tele deben estar en la misma red; anota la IP de la tele.
+**Before you start, enable developer options on the TV** (the wizard explains it step by step): *Settings → Device Preferences → About → press "Build" 7 times*, then enable USB debugging and **network debugging** (on Android 11+ it may be called *Wireless debugging* and ask for a pairing code). The PC and the TV must be on the same network; note the TV's IP.
 
-ADB (`platform-tools` de Google) se descarga solo, por HTTPS, la primera vez.
+ADB (Google's `platform-tools`) is downloaded automatically over HTTPS the first time, and verified against the checksum Google publishes.
 
-## Paso a paso
+> **When you are done, turn network debugging off again** on the TV. While it is on, any device on your network can connect to it. The wizard and the CLI remind you at the end.
 
-Capturas del asistente (`tvlite gui`) recorriéndolo contra una **tele simulada** (`FakeAdb`, la misma que usan las pruebas); en una tele real los datos serán los de tu tele. Se regeneran con `python tools/docs/capture_gui.py`.
+## Step by step
 
-**1. Antes de empezar.** El asistente explica cómo activar las opciones de desarrollador y la depuración por red en la tele.
+Screenshots of the wizard (`tvlite gui`) walking through a **simulated TV** (`FakeAdb`, the same one the tests use); on a real TV the data will be your TV's. Regenerate them with `python tools/docs/capture_gui.py docs/img en`.
 
-![Paso 1: bienvenida](docs/img/gui-es-1-bienvenida.png)
+**1. Before you start.** Explains how to enable developer options and network debugging on the TV.
 
-**2. Conectar.** Escribe la IP de la tele. Si tu tele usa *Depuración inalámbrica* con código de emparejamiento, rellena también esos campos. Si hace falta, la tele te pedirá aceptar la clave de este PC. ADB se descarga solo.
+![Step 1: welcome](docs/img/gui-en-1-welcome.png)
 
-![Paso 2: conectar](docs/img/gui-es-2-conectar.png)
+**2. Connect.** Type the TV's IP. If your TV uses *Wireless debugging* with a pairing code, fill in those fields too. The TV may ask you to accept this PC's key. ADB downloads itself.
 
-**3. Tu tele.** Muestra marca, modelo, Android, procesador, RAM y almacenamiento, y el perfil de optimización que se aplicará según la RAM.
+![Step 2: connect](docs/img/gui-en-2-connect.png)
 
-![Paso 3: tu tele](docs/img/gui-es-3-tu-tele.png)
+**3. Your TV.** Brand, model, Android, SoC, RAM and storage, and the optimization profile that will be applied based on RAM. A button copies an anonymous report you can paste into a GitHub issue.
 
-**4. Limpieza.** Lista solo paquetes de listas revisadas, preseleccionados según la RAM. Los que pueden quitar una función llevan un aviso `(!)`, y las apps de usuario, que **no se pueden restaurar**, salen sin marcar.
+![Step 3: your TV](docs/img/gui-en-3-your-tv.png)
 
-![Paso 4: limpieza](docs/img/gui-es-4-limpieza.png)
+**4. Cleanup.** Only packages from reviewed lists, preselected according to RAM. Items that may remove a feature carry a `(!)` warning; user apps are tagged because their APK is saved before removal so they can be restored.
 
-**5. Apps a instalar.** Streaming, reproductores, Stremio y VPN. La mayoría se instalan desde **Play Store** (la tele debe tener la sesión de Google iniciada); Stremio se descarga de su web oficial.
+![Step 4: cleanup](docs/img/gui-en-4-cleanup.png)
 
-![Paso 5: apps](docs/img/gui-es-5-apps.png)
+**5. Apps to install.** Streaming, players, Stremio and VPNs. Most are installed from **Play Store** (the TV must be signed in to a Google account); Stremio is downloaded from its official site.
 
-**6. Resumen.** Dice qué se va a hacer. Marca *Solo simular* para ver el plan sin cambiar nada.
+![Step 5: apps](docs/img/gui-en-5-apps.png)
 
-![Paso 6: resumen](docs/img/gui-es-6-resumen.png)
+**6. Summary.** Says what is about to happen. Tick *Dry run only* to see the plan without changing anything.
 
-**7. Resultado.** Guarda la copia de seguridad antes de tocar nada, aplica los cambios, y deja el botón **Restaurar la tele** para deshacerlo todo.
+![Step 6: summary](docs/img/gui-en-6-summary.png)
 
-![Paso 7: resultado](docs/img/gui-es-7-resultado.png)
+**7. Result.** Saves the backup before touching anything, applies the changes, shows the before/after RAM line, reminds you to turn network debugging off, and leaves a **Restore the TV** button to undo everything.
 
-**8. Resultado final en la tele.** Ejemplo de cómo queda la Home al terminar, con **9 apps** instaladas (Play Store, YouTube, Stremio, NordVPN, Red Bull TV y las propias de la tele): banners a pantalla completa con esquinas redondeadas, reloj arriba a la derecha y Play Store siempre la primera. Es una captura de la tele real del proyecto (TCL, 940 MB de RAM, Android 11). Con una pulsación larga sobre cualquier app puedes moverla, ocultarla o ver su información.
+![Step 7: result](docs/img/gui-en-7-result.png)
 
-![Home final con 9 apps](docs/img/launcher-home.png)
+**8. Final result on the TV.** Example of how the home screen ends up, with **9 apps** installed (Play Store, YouTube, Stremio, NordVPN, Red Bull TV and the TV's own): full-bleed banners with rounded corners, clock at the top right and Play Store always first. This is a screenshot of the project's real TV (TCL, 940 MB of RAM, Android 11). A long press on any app lets you move it, hide it or see its info.
 
-## Modelo de seguridad
+![Final home with 9 apps](docs/img/launcher-home.png)
 
-Esto modifica el software de tu tele. Un error en una tele desconocida puede dejarla sin arrancar, así que:
+## Safety model
 
-- **Solo listas revisadas.** Nunca se quita "lo que parezca bloat". Cada lista indica en qué dispositivos reales se verificó (`verified_on`); las que no lo indican se ignoran salvo que se pida (`--include-unverified`) y nunca se preseleccionan.
-- **Paquetes protegidos** (Play Store, GMS, SystemUI, ajustes, proveedores, red, Bluetooth…): no se quitan aunque aparezcan en una lista. Hay una prueba que lo comprueba y un validador de listas.
-- **Reversible solo lo que es de sistema.** `pm uninstall -k --user 0` se puede deshacer con `install-existing` únicamente en **apps de sistema**. En una app de usuario (instalada en `/data/app`) el APK se borra y `install-existing` deja un registro fantasma que *dice* estar instalado. Por eso las apps de usuario **no se preseleccionan** y quitarlas exige `--allow-irreversible`; la restauración verifica que el paquete vuelve de verdad y avisa si no.
-- **Por lotes y con comprobación de salud.** Se actúa en lotes pequeños y, si la tele deja de responder, se deshace el lote y se detiene el proceso.
-- **Diario a disco.** Cada acción se escribe y sincroniza al momento, así que se puede restaurar aunque el programa se interrumpa.
-- **Launcher con retroceso.** Se instala, se comprueba que abre, se asigna como inicio y se verifica que el botón Home lo abre; si no, se restaura el original y se retira el nuevo.
-- **Play Protect.** Algunas teles abren un diálogo al instalar un APK desconocido por ADB y la instalación se queda esperando. `tvlite` desactiva **solo** la verificación de instalaciones por ADB (`verifier_verify_adb_installs`) mientras instala sus propios APK, lo anota en el diario y lo restaura siempre. Es un cambio de seguridad acotado y temporal; si no te convence, instala el APK a mano.
-- **Modo simulación** (`--dry-run`): enseña qué haría sin cambiar nada.
+This modifies your TV's software. A mistake on an unfamiliar TV could leave it unable to boot, so:
 
-## Qué está probado
+- **Reviewed lists only.** It never removes "whatever looks like bloat". Each list states on which real devices it was verified (`verified_on`); lists without it are ignored unless you ask (`--include-unverified`) and are never preselected.
+- **Protected packages** (Play Store, GMS, SystemUI, settings, providers, networking, Bluetooth…) are never removed, even if a list names them. A test checks it, and a list validator enforces it.
+- **System apps** are removed with `pm uninstall -k --user 0` and brought back with `install-existing`. **User apps** (installed in `/data/app`) lose their APK when removed, and `install-existing` then leaves a "ghost" record that *claims* to be installed. So **before removing a user app its APK (base + splits) is saved in the backup** and restore reinstalls it from there. If the APK cannot be saved, that app is **not removed** (unless you pass `--allow-irreversible`, in which case it is logged as not restorable). Restore always verifies the package really came back.
+- **Small batches with a health check.** If the TV stops responding, the batch is undone and the process stops.
+- **On-disk journal.** Every action is written and synced immediately, so you can restore even if the program is interrupted or the connection drops. On a lost connection the tool stops, tells you where the backup is and leaves **Restore** available.
+- **Launcher with rollback.** It installs, checks it opens, assigns it as home and verifies the Home button opens it; otherwise it restores the original and removes the new one. If a launcher with a different signature is already installed, it is reinstalled (only its own settings are lost).
+- **Play Protect.** Some TVs show a dialog when an unknown APK is installed over ADB and the install hangs forever. `tvlite` turns off **only** the ADB-install verification (`verifier_verify_adb_installs`) while it installs its own APKs, writes it to the journal and always restores it. It is a narrow, temporary security change; if you are not comfortable with it, install the APK by hand.
+- **Stay-awake window.** `stay_on_while_plugged_in` is set only while the process runs, journaled and restored.
+- **Dry run** (`--dry-run`): shows what it would do without changing anything.
 
-Detalle completo y cómo añadir tu tele en [docs/DEVICES.md](docs/DEVICES.md).
+## What is tested
 
-| Entorno | Tipo | SoC / ABI | RAM | Android | Qué se probó |
+Full detail and how to add your TV in [docs/DEVICES.md](docs/DEVICES.md).
+
+| Environment | Type | SoC / ABI | RAM | Android | What was tested |
 |---|---|---|---|---|---|
-| TCL Smart TV | **Hardware real** | MediaTek mt5867 (armeabi-v7a) | 940 MB | 11 | Listas de debloat, Lite Launcher y apps aplicados **a mano** (mismos comandos que automatiza `tvlite`). `tvlite` aún no se ha ejecutado en esta tele. |
-| AVD `atv9-1gb` | Emulado | x86 (aceleración WHPX) | 1 GB | 9 (API 28) | Suite de integración (6 pruebas): detección, debloat, cambio de launcher (ruta sin roles), restauración, simulación de marca, `--dry-run`. |
-| AVD `atv11-1gb` | Emulado | x86 | 1 GB | 11 (API 30) | Las mismas 6 pruebas. |
-| AVD `atv14-2gb` | Emulado | x86 | 2 GB | 14 (API 34) | Las mismas 6 pruebas (con Play Store y Play Protect). |
+| TCL Smart TV | **Real hardware** | MediaTek mt5867 (armeabi-v7a) | 940 MB | 11 | Debloat lists, Lite Launcher and apps applied **by hand** (the same commands `tvlite` automates). `tvlite` itself was run here for `detect`, `plan`, `report`, `metrics`, `apply --dry-run` and a real remove + restore of one user app with 4 APKs (Red Bull TV). Not yet on real hardware: full debloat from a stock state, launcher switch, Play Store installs. |
+| AVD `atv9-1gb` | Emulated | x86 (WHPX acceleration) | 1 GB | 9 (API 28) | Integration suite: detection, debloat, launcher switch (no-roles path), restore, brand simulation, `--dry-run`. |
+| AVD `atv11-1gb` | Emulated | x86 | 1 GB | 11 (API 30) | Same suite. |
+| AVD `atv14-2gb` | Emulated | x86 | 2 GB | 14 (API 34) | Same suite (with Play Store and Play Protect). |
 
-**Procesadores probados en hardware real:** MediaTek mt5867.
+**SoCs tested on real hardware:** MediaTek mt5867.
 
-El emulador no reproduce la GPU ni el SoC de una tele real: valida la lógica en distintas versiones de Android y RAM, **no** el rendimiento ni la compatibilidad de una marca. Las "marcas" del emulador son apps vacías con nombres de paquete (reales para TCL, sintéticos para `acme`) y la variable `TVLITE_SIMULATE`.
+The emulator does not reproduce a real TV's GPU or SoC: it validates the logic across Android versions and RAM sizes, **not** performance or a brand's compatibility. The emulator "brands" are empty apps with package names (real for TCL, synthetic for `acme`) plus the `TVLITE_SIMULATE` variable.
 
-### Resultados medidos del launcher (una sola tele, muestras pequeñas)
+### Measured launcher results (one TV, small samples)
 
-| | Launcher de Google | Lite Launcher |
+| | Google launcher | Lite Launcher |
 |---|---|---|
-| RAM del proceso | 119–132 MB | 36–49 MB |
-| Fotograma, mediana | 11 ms | 5 ms |
+| Process RAM | 119–132 MB | 36–49 MB |
+| Frame time, median | 11 ms | 5 ms |
 
-## Limitaciones conocidas
+## Known limitations
 
-- **Instalar apps desde Play Store es frágil.** Casi ninguna app tiene APK oficial descargable (no se redistribuyen). `tvlite` abre la ficha de la app y pulsa "Instalar" por ADB; depende de la interfaz de Play Store y de que haya sesión de Google. Si falla, avisa y puedes pulsar Instalar con el mando. Stremio sí se descarga del sitio oficial.
-- **Solo se han verificado los nombres de paquete de unas pocas apps** (marcadas `verified` en `apps.json`); el resto del catálogo está sin verificar.
-- **Listas de debloat solo de TCL** (más las genéricas de Android/Google). Faltan marcas: [contribuye](CONTRIBUTING.md).
-- **Interfaz gráfica**: probada con una prueba automática contra una tele simulada, no con personas usándola.
-- Windows es la plataforma principal; Linux/macOS deberían funcionar pero no están probados.
-- Sin firmas de lanzamiento aún: el APK del launcher se firma con una clave de depuración.
+- **Installing apps from Play Store drives its UI over ADB** (it opens the app page and presses Install), which depends on Play Store's layout and on the TV being signed in to Google. It has not been tried against a real TV's Play Store with `tvlite` yet. Almost no app ships an official downloadable APK, and third-party APKs are not redistributed. Stremio is downloaded from its official site and verified.
+- **Only a few apps' package names are verified** (marked `verified` in `apps.json`); the rest of the catalog is unverified.
+- **Debloat lists exist only for TCL** (plus generic Android/Google ones). Other brands are missing: [please contribute](CONTRIBUTING.md).
+- **GUI**: tested by an automatic test against a simulated TV and checked by eye in screenshots, not with people using it.
+- Windows is the main platform; Linux/macOS should work but are untested.
+- **No release signing yet**: until the maintainer creates a release key (see [docs/RELEASING.md](docs/RELEASING.md)) the launcher APK is signed with a debug key and the Windows executable is not code-signed.
+- The code and test comments are mostly in Spanish; the user-facing UI is bilingual (es/en).
 
-## Desarrollo
+## Development
 
 ```bash
 cd installer
 pip install -e ".[dev]"
-python -m pytest                 # pruebas unitarias con una tele simulada (sin hardware)
+python -m pytest                 # unit tests against a simulated TV (no hardware)
 ```
 
-**Launcher** (necesita JDK 17+ y el SDK de Android con build-tools ≥ 35 y plataforma `android-30`):
+**Launcher** (needs JDK 17+ and the Android SDK with build-tools ≥ 35 and platform `android-30`):
 
 ```bash
-ANDROID_SDK_ROOT=/ruta/al/sdk bash launcher/build.sh     # -> launcher/build/litelauncher.apk
+ANDROID_SDK_ROOT=/path/to/sdk bash launcher/build.sh     # -> launcher/build/litelauncher.apk
 ```
 
-**Emuladores de Android TV** (RAM y Android configurables; requieren aceleración de hardware):
+**Android TV emulators** (configurable RAM and Android; need hardware acceleration):
 
 ```bash
 python tools/emulator/emu.py list
@@ -140,8 +149,10 @@ python tools/emulator/emu.py start atv11-1gb
 TVLITE_EMULATOR=1 TVLITE_EXPECT_RAM_MB=1024 python -m pytest installer/tests/integration -v
 ```
 
-Estructura: `launcher/` (app Android), `installer/tvlite/` (núcleo, CLI y GUI), `installer/tests/` (unitarias + integración), `tools/emulator/` (emuladores y fixtures), `docs/`.
+Layout: `launcher/` (Android app), `installer/tvlite/` (core, CLI and GUI), `installer/tests/` (unit + integration), `tools/emulator/` (emulators and fixtures), `docs/`.
 
-## Licencia
+Releases (signing, checksums): [docs/RELEASING.md](docs/RELEASING.md).
+
+## License
 
 [Apache-2.0](LICENSE).

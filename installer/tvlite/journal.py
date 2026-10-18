@@ -54,6 +54,10 @@ class Journal:
         with open(self.path, encoding="utf-8") as fh:
             return [json.loads(line) for line in fh if line.strip()]
 
+    def apk_dir(self, package: str) -> Path:
+        """Donde se guardan los APK de una app de usuario antes de quitarla (para poder reinstalarla)."""
+        return self.dir / "apks" / package
+
     def write_json(self, name: str, data) -> None:
         (self.dir / name).write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 

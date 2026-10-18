@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Iterable, Optional
 
-from . import android
+from . import android, restore as restore_mod
 from .device import DeviceInfo
 from .journal import Journal
 
@@ -38,7 +38,7 @@ class PlanItem:
     breaks: str = ""
     verified: bool = True
     selected: bool = False
-    system: bool = True  # False = app de usuario: quitarla NO se puede deshacer (se reinstala desde Play Store)
+    system: bool = True  # False = app de usuario: antes de quitarla se guarda su APK para poder restaurarla
 
 
 @dataclass
@@ -108,10 +108,9 @@ def build_plan(
     catalog: Optional[dict] = None,
     include_unverified: bool = False,
     system_packages: Optional[set[str]] = None,
-    allow_irreversible: bool = False,
 ) -> list[PlanItem]:
     """Paquetes de las listas que existen en esta tele, con su preseleccion segun la RAM.
-    Las apps que no son de sistema no se preseleccionan (no se pueden restaurar) salvo allow_irreversible.
+    Las apps de usuario (no de sistema) tambien se preseleccionan: antes de quitarlas se guarda su APK.
     Si no se conoce la lista de apps de sistema (None) se asume que todas lo son."""
     catalog = catalog or load_catalog()
     preselect = PROFILE_TIERS[device.profile]
@@ -136,11 +135,29 @@ def build_plan(
                     tier=entry["tier"],
                     breaks=entry.get("breaks", ""),
                     verified=verified,
-                    selected=entry["tier"] in preselect and verified and (is_system or allow_irreversible),
+                    selected=entry["tier"] in preselect and verified,
                     system=is_system,
                 )
             )
     return plan
+
+
+def backup_apks(adb, package: str, dest: Path) -> Optional[list[str]]:
+    """Copia al PC los APK (base y splits) de una app de usuario. Devuelve los nombres de fichero o None
+    si no se pudo guardar alguno: sin copia completa no se puede garantizar la restauracion."""
+    out = adb.shell(f"pm path {package}")
+    remote = [line.split(":", 1)[1].strip() for line in out.splitlines() if line.startswith("package:")]
+    if not remote:
+        return None
+    dest.mkdir(parents=True, exist_ok=True)
+    names: list[str] = []
+    for index, path in enumerate(remote):
+        local = dest / f"{index}-{path.rsplit('/', 1)[-1]}"
+        res = adb.pull(path, local)
+        if not res.ok or not local.is_file() or local.stat().st_size == 0:
+            return None
+        names.append(local.name)
+    return names
 
 
 def default_health_check(adb) -> bool:
@@ -158,13 +175,17 @@ def apply_plan(
     dry_run: bool = False,
     catalog: Optional[dict] = None,
     health_check: Callable[[object], bool] = default_health_check,
+    allow_irreversible: bool = False,
 ) -> ApplyResult:
+    """allow_irreversible: quitar una app de usuario aunque no se pueda guardar su APK (no se podra
+    restaurar). Por defecto, si la copia falla, esa app NO se quita."""
     catalog = catalog or load_catalog()
     selected = [i for i in items if i.selected]
     result = ApplyResult()
     for start in range(0, len(selected), BATCH_SIZE):
         batch = selected[start : start + BATCH_SIZE]
         batch_done: list[str] = []
+        reverses: dict[str, Optional[dict]] = {}
         for item in batch:
             if is_protected(item.pkg, catalog):  # defensa en profundidad
                 result.failed.append((item.pkg, "paquete protegido"))
@@ -172,15 +193,28 @@ def apply_plan(
             if dry_run:
                 progress(f"[simulacion] quitaria {item.pkg} ({item.label})")
                 continue
+            reverse: Optional[dict] = None
+            action = "debloat"
+            if item.system:
+                reverse = {"op": "install_existing", "pkg": item.pkg}
+            else:
+                files = backup_apks(adb, item.pkg, journal.apk_dir(item.pkg))
+                if files:
+                    reverse = {"op": "install_apks", "pkg": item.pkg, "dir": f"apks/{item.pkg}", "files": files}
+                    action = "debloat_user_app"
+                elif not allow_irreversible:
+                    result.failed.append((item.pkg, "no se pudo guardar su APK; no se quita para poder restaurarla"))
+                    progress(f"No se quita {item.pkg}: no se pudo guardar su APK para restaurarla")
+                    continue
+                else:
+                    action = "debloat_irreversible"
             ok, out = android.uninstall_user0(adb, item.pkg)
-            journal.record(
-                "debloat" if item.system else "debloat_irreversible", item.pkg,
-                reverse={"op": "install_existing", "pkg": item.pkg} if ok and item.system else None,
-                ok=ok, detail=out,
-            )
+            journal.record(action, item.pkg, reverse=reverse if ok else None, ok=ok, detail=out)
             if ok:
                 batch_done.append(item.pkg)
-                note = "" if item.system else " [NO reversible: reinstalar desde Play Store]"
+                reverses[item.pkg] = reverse
+                note = {"debloat": "", "debloat_user_app": " (APK guardado para restaurar)",
+                        "debloat_irreversible": " [NO reversible]"}[action]
                 progress(f"Quitado {item.pkg} ({item.label}){note}")
             else:
                 result.failed.append((item.pkg, out))
@@ -190,7 +224,8 @@ def apply_plan(
         if not health_check(adb):
             progress("La tele no responde bien tras este lote: se deshace y se detiene el proceso")
             for pkg in reversed(batch_done):
-                ok, _ = android.restore_package(adb, pkg)
+                reverse = reverses.get(pkg)
+                ok = bool(reverse) and restore_mod.undo(adb, reverse, journal.dir)[0]
                 journal.record("debloat_rollback", pkg, ok=ok)
                 if ok:
                     result.rolled_back.append(pkg)

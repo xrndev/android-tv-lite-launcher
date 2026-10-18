@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -27,7 +28,8 @@ class Options:
     tweaks: bool = True
     dry_run: bool = False
     include_unverified: bool = False
-    allow_irreversible: bool = False  # permitir quitar apps de usuario (no se pueden restaurar)
+    allow_irreversible: bool = False  # quitar apps de usuario aunque no se pueda guardar su APK
+    keep_awake: bool = True  # evita que la tele se duerma (y corte ADB) a mitad del proceso
     launcher_apk: Optional[Path] = None
 
 
@@ -39,6 +41,9 @@ class Summary:
     launcher: Optional[launcher.LauncherResult] = None
     launcher_error: str = ""
     dry_run: bool = False
+    error: str = ""  # conexion perdida u otro fallo a mitad: el backup permite restaurar
+    metrics_before: Optional[dict] = None
+    metrics_after: Optional[dict] = None
 
 
 def normalize_target(text: str) -> str:
@@ -89,6 +94,16 @@ def apply_tweaks(adb, journal: Journal, profile: str, progress) -> None:
     progress(f"Animaciones del sistema a {value}x")
 
 
+def format_metrics(before: Optional[dict], after: Optional[dict]) -> str:
+    if not before or not after:
+        return ""
+    return (
+        f"RAM disponible: {before['ram_available_mb']} MB -> {after['ram_available_mb']} MB | "
+        f"paquetes: {before['packages']} -> {after['packages']} "
+        "(la RAM suele mejorar mas tras reiniciar la tele)"
+    )
+
+
 def run(
     adb: Adb,
     info: devmod.DeviceInfo,
@@ -99,23 +114,40 @@ def run(
     summary = Summary(dry_run=options.dry_run)
     journal = Journal.new(info, base=backup_base)
     summary.backup_dir = journal.dir
+    try:
+        awake = android.keep_awake(adb, journal) if options.keep_awake and not options.dry_run else contextlib.nullcontext()
+        with awake:
+            _run_steps(adb, info, options, progress, journal, summary)
+    except AdbError as exc:
+        # La tele se durmio o se cayo la red y no se pudo recuperar: no se pierde nada, el diario ya
+        # esta en disco y 'restore' deshace lo aplicado hasta ahora.
+        summary.error = f"Se perdio la conexion con la tele ({exc}). Copia de seguridad en {journal.dir}"
+        progress(summary.error)
+    return summary
+
+
+def _run_steps(adb, info, options, progress, journal, summary) -> None:
     progress(f"Guardando el estado original en {journal.dir}")
     snapshot(adb, journal, info)
+    summary.metrics_before = android.memory_snapshot(adb)
 
     catalog = debloat.load_catalog()
     plan = debloat.build_plan(
         info, android.list_packages(adb), catalog, options.include_unverified,
-        system_packages=android.list_system_packages(adb), allow_irreversible=options.allow_irreversible,
+        system_packages=android.list_system_packages(adb),
     )
     for item in plan:
         item.selected = item.pkg in options.debloat_packages
-    summary.debloat = debloat.apply_plan(adb, plan, journal, progress, dry_run=options.dry_run, catalog=catalog)
+    summary.debloat = debloat.apply_plan(
+        adb, plan, journal, progress, dry_run=options.dry_run, catalog=catalog,
+        allow_irreversible=options.allow_irreversible,
+    )
     if summary.debloat.aborted:
-        return summary
+        return
 
     if options.dry_run:
         progress("Simulacion terminada: no se ha cambiado nada en la tele")
-        return summary
+        return
 
     if options.tweaks:
         apply_tweaks(adb, journal, info.profile, progress)
@@ -135,4 +167,9 @@ def run(
                 summary.launcher = launcher.activate(adb, journal, apk, progress, sdk=info.sdk)
             except launcher.LauncherError as exc:
                 summary.launcher_error = str(exc)
-    return summary
+
+    summary.metrics_after = android.memory_snapshot(adb)
+    journal.write_json("metrics.json", {"before": summary.metrics_before, "after": summary.metrics_after})
+    line = format_metrics(summary.metrics_before, summary.metrics_after)
+    if line:
+        progress(line)

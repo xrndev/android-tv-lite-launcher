@@ -76,6 +76,16 @@ def delete_setting(adb, namespace: str, key: str) -> None:
 VERIFY_ADB_KEY = "verifier_verify_adb_installs"
 
 
+def _restore_setting(adb, key: str, previous: Optional[str]) -> None:
+    try:
+        if previous is None:
+            delete_setting(adb, "global", key)
+        else:
+            put_setting(adb, "global", key, previous)
+    except Exception:  # noqa: BLE001 - sin conexion no se puede; el diario guarda el valor original
+        pass
+
+
 @contextlib.contextmanager
 def adb_verification_off(adb, journal=None) -> Iterator[None]:
     """Desactiva SOLO la verificacion de Play Protect de las instalaciones hechas por ADB mientras dura
@@ -92,10 +102,44 @@ def adb_verification_off(adb, journal=None) -> Iterator[None]:
     try:
         yield
     finally:
-        if previous is None:
-            delete_setting(adb, "global", VERIFY_ADB_KEY)
-        else:
-            put_setting(adb, "global", VERIFY_ADB_KEY, previous)
+        _restore_setting(adb, VERIFY_ADB_KEY, previous)
+
+
+STAY_ON_KEY = "stay_on_while_plugged_in"
+
+
+@contextlib.contextmanager
+def keep_awake(adb, journal=None) -> Iterator[None]:
+    """Mantiene la tele despierta mientras dura el bloque: en reposo corta la conexion ADB y dejaria
+    el proceso a medias. El ajuste se anota en el diario y se devuelve siempre a su valor original."""
+    previous = get_setting(adb, "global", STAY_ON_KEY)
+    put_setting(adb, "global", STAY_ON_KEY, "7")  # 7 = AC | USB | inalambrico
+    adb.shell("input keyevent KEYCODE_WAKEUP")
+    if journal is not None:
+        journal.record(
+            "setting", STAY_ON_KEY,
+            reverse={"op": "setting", "ns": "global", "key": STAY_ON_KEY, "value": previous},
+        )
+    try:
+        yield
+    finally:
+        _restore_setting(adb, STAY_ON_KEY, previous)
+
+
+def memory_snapshot(adb) -> dict:
+    """Memoria y paquetes ahora mismo, para comparar antes y despues. Se lee de /proc/meminfo
+    (MemAvailable es la cifra fiable de RAM utilizable; 'free' a secas engana por la cache)."""
+    values: dict[str, int] = {}
+    for line in adb.shell("cat /proc/meminfo").splitlines():
+        match = re.match(r"(\w+):\s+(\d+) kB", line.strip())
+        if match:
+            values[match.group(1)] = int(match.group(2)) // 1024
+    return {
+        "ram_total_mb": values.get("MemTotal", 0),
+        "ram_available_mb": values.get("MemAvailable", values.get("MemFree", 0)),
+        "swap_used_mb": max(values.get("SwapTotal", 0) - values.get("SwapFree", 0), 0),
+        "packages": len(list_packages(adb)),
+    }
 
 
 def press(adb, key: str) -> None:

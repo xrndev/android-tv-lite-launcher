@@ -129,27 +129,27 @@ def main() -> None:
         write_png(OUT / f"gui-{LANG}-{name}.png", w, h, data)
         print("guardada", name, f"{w}x{h}")
 
-    shot("1-bienvenida")
+    shot("1-welcome")
     app.go_next()
     app.ip_var.set("192.168.1.50")
-    shot("2-conectar")
+    shot("2-connect")
     app.go_next()
     pump(1.5)
-    shot("3-tu-tele")
+    shot("3-your-tv")
     app.go_next()
-    shot("4-limpieza")
+    shot("4-cleanup")
     app.go_next()
     for key in ("stremio", "nordvpn", "netflix", "youtube"):
         app.app_vars[key].set(True)
     shot("5-apps")
     app.go_next()
-    shot("6-resumen")
+    shot("6-summary")
     app.do_run()
     for _ in range(300):
         pump(0.1)
         if app.summary is not None:
             break
-    shot("7-resultado")
+    shot("7-result")
     root.destroy()
     shutil.rmtree(_home, ignore_errors=True)  # carpeta temporal de la demo
 

@@ -26,6 +26,8 @@ class FakeAdb:
         unhealthy_after_uninstalls=None,
         play_installs=True,
         authorized=True,
+        pull_fails=False,
+        signature_conflict=False,
     ):
         self.serial = None
         self.props = {
@@ -60,6 +62,8 @@ class FakeAdb:
         self.unhealthy_after = unhealthy_after_uninstalls
         self.play_installs = play_installs
         self.authorized = authorized
+        self.pull_fails = pull_fails
+        self.signature_conflict = signature_conflict
         self.uninstall_count = 0
         self.pending_play_pkg = None
         self.log: list[str] = []
@@ -99,6 +103,8 @@ class FakeAdb:
     def install(self, apk, timeout=300):
         name = Path(str(apk)).stem
         pkg = LITE if "litelauncher" in name else f"installed.{name}"
+        if pkg == LITE and self.signature_conflict and self.pkgs.get(LITE, {}).get("installed"):
+            return Result(1, "Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE: signatures do not match]", "")
         self.pkgs[pkg] = {"installed": True, "enabled": True, "home": pkg == LITE, "system": False}
         self.log.append(f"install {pkg}")
         return Result(0, "Performing Streamed Install\nSuccess", "")
@@ -111,7 +117,20 @@ class FakeAdb:
         return Result(0, "Success", "")
 
     def pull(self, remote, local):
-        return Result(0, "", "")
+        """Copia 'el APK' a disco (contenido simbolico) para poder probar copias de seguridad."""
+        if self.pull_fails:
+            return Result(1, "", "adb: error: failed to copy")
+        Path(local).parent.mkdir(parents=True, exist_ok=True)
+        Path(local).write_bytes(b"apk:" + str(remote).encode())
+        return Result(0, "1 file pulled", "")
+
+    def install_multiple(self, apks, timeout=300):
+        """Reinstala una app a partir de sus APK guardados. El paquete se deduce de la carpeta
+        (apks/<paquete>/...), igual que lo guarda debloat.backup_apks."""
+        pkg = Path(str(apks[0])).parent.name
+        self.pkgs[pkg] = {"installed": True, "enabled": True, "home": False, "system": False}
+        self.log.append(f"install-multiple {pkg} ({len(apks)} apk)")
+        return Result(0, "Success", "")
 
     def shell(self, command, timeout=60):
         self.log.append(command)
@@ -121,7 +140,10 @@ class FakeAdb:
         if c.startswith("getprop "):
             return self.props.get(c.split()[1], "")
         if c == "cat /proc/meminfo":
-            return f"MemTotal:        {self.ram_kb} kB\nMemFree:  1000 kB"
+            # Cada paquete quitado libera algo de RAM: asi se puede probar la comparacion antes/despues.
+            available = 300_000 + 5_000 * self.uninstall_count
+            return (f"MemTotal:        {self.ram_kb} kB\nMemFree:  1000 kB\n"
+                    f"MemAvailable:  {available} kB\nSwapTotal:  819196 kB\nSwapFree:  600000 kB")
         if c == "df /data":
             return "Filesystem 1K-blocks Used Available Use% Mounted on\n/dev/block/dm-12 3647536 2348352 1207352 67% /data"
         if c == "wm density":

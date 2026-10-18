@@ -117,25 +117,41 @@ def _simulate(info: DeviceInfo) -> DeviceInfo:
     return info
 
 
-def describe(info: DeviceInfo) -> str:
+_DESCRIBE = {
+    "es": {
+        "unknown_device": "Dispositivo desconocido", "soc": "Procesador/plataforma", "unknown": "desconocido",
+        "unknown_abi": "ABI desconocida", "ram": "RAM", "ram_unknown": "RAM: desconocida",
+        "storage": "Almacenamiento libre", "screen": "Pantalla", "profile": "Perfil",
+        "ultra_low": "RAM muy baja: optimización máxima", "low": "RAM baja: optimización recomendada",
+        "normal": "RAM suficiente: solo limpieza segura",
+        "simulated": "(SIMULADO: datos sobrescritos con TVLITE_SIMULATE, solo para pruebas)",
+    },
+    "en": {
+        "unknown_device": "Unknown device", "soc": "SoC / platform", "unknown": "unknown",
+        "unknown_abi": "unknown ABI", "ram": "RAM", "ram_unknown": "RAM: unknown",
+        "storage": "Free storage", "screen": "Screen", "profile": "Profile",
+        "ultra_low": "Very low RAM: maximum optimization", "low": "Low RAM: recommended optimization",
+        "normal": "Enough RAM: safe cleanup only",
+        "simulated": "(SIMULATED: data overridden with TVLITE_SIMULATE, for testing only)",
+    },
+}
+
+
+def describe(info: DeviceInfo, lang: str = "es") -> str:
     """Descripcion legible de la tele para mostrar al usuario."""
-    name = " ".join(p for p in (info.manufacturer or info.brand, info.model) if p) or "Dispositivo desconocido"
+    w = _DESCRIBE.get(lang, _DESCRIBE["en"])
+    name = " ".join(p for p in (info.manufacturer or info.brand, info.model) if p) or w["unknown_device"]
     lines = [
         name,
         f"Android {info.android_release} (API {info.sdk})",
-        f"Procesador/plataforma: {info.soc or 'desconocido'} ({', '.join(info.abis) or 'ABI desconocida'})",
-        f"RAM: {info.ram_mb} MB" if info.ram_mb else "RAM: desconocida",
+        f"{w['soc']}: {info.soc or w['unknown']} ({', '.join(info.abis) or w['unknown_abi']})",
+        f"{w['ram']}: {info.ram_mb} MB" if info.ram_mb else w["ram_unknown"],
     ]
     if info.storage_free_mb is not None:
-        lines.append(f"Almacenamiento libre: {info.storage_free_mb} MB")
+        lines.append(f"{w['storage']}: {info.storage_free_mb} MB")
     if info.resolution:
-        lines.append(f"Pantalla: {info.resolution} ({info.density or '?'} dpi)")
-    labels = {
-        "ultra_low": "RAM muy baja: optimización máxima",
-        "low": "RAM baja: optimización recomendada",
-        "normal": "RAM suficiente: solo limpieza segura",
-    }
-    lines.append(f"Perfil: {labels[info.profile]}")
+        lines.append(f"{w['screen']}: {info.resolution} ({info.density or '?'} dpi)")
+    lines.append(f"{w['profile']}: {w[info.profile]}")
     if info.simulated:
-        lines.append("(SIMULADO: datos sobrescritos con TVLITE_SIMULATE, solo para pruebas)")
+        lines.append(w["simulated"])
     return "\n".join(lines)
