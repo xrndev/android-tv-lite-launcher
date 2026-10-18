@@ -75,9 +75,9 @@ def test_missing_commands_leave_signals_none_instead_of_failing():
 
 def test_nothing_personal_leaves_in_the_dossier():
     adb = make(props={"ro.serialno": "ABC123SECRET", "ro.build.fingerprint": "Sony/KD/x:11/RKQ1/1:user/release-keys"})
-    adb.serial = "192.168.1.50:5555"
+    adb.serial = "192.0.2.10:5555"
     text = json.dumps(build(adb))
-    for secret in ("ABC123SECRET", "192.168.1.50", "netflix"):
+    for secret in ("ABC123SECRET", "192.0.2.10", "netflix"):
         assert secret not in text
     assert "serial" not in text.lower()
     assert '"build.fingerprint": "Sony/KD/x:11/RKQ1/1:user/release-keys"' in text
