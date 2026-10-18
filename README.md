@@ -55,13 +55,27 @@ Reviewed lists only (never "whatever looks like bloat"), protected packages, a b
 
 ## Tested so far
 
-| Environment | Type | What was tested |
-|---|---|---|
-| TCL Smart TV (mt5867, 940 MB, Android 11) | **Real hardware** | Lists, launcher and apps by hand; `tvlite`: read-only commands, dry run and a real remove + restore of a 4-APK app |
-| Emulators: Android 9, 11, 14 (1–2 GB) | Emulated | Full flow: debloat, launcher switch, restore |
-| Profiles of real models: TCL, TD Systems ×3, Xiaomi, Philips, Sony | Simulated | The logic, with each model's identity, RAM and packages: 4 of 4 tests each |
+**Real hardware**
 
-An emulator is not a real TV: it validates the logic, not the hardware or that removing a brand's packages is safe. Per-model detail, evidence level and sources: [docs/DEVICES.md](docs/DEVICES.md).
+| TV | Android | RAM | SoC | What was tested |
+|---|---|---|---|---|
+| TCL Smart TV | 11 | 917 MB | MediaTek mt5867 | Lists, launcher and apps by hand. `tvlite`: read-only commands, dry run, and a real remove + restore of a 4-APK app. **Not yet:** a full cleanup from a stock state, the launcher switch and Play Store installs with `tvlite` |
+
+**Real models, simulated on an emulator** (the model's identity, RAM, Android version and package names on an emulator with matching RAM; 4 of 4 tests each: detection, nothing unverified is touched, removal + restore, report):
+
+| Model | Android | RAM | SoC | Package names from | Specs from |
+|---|---|---|---|---|---|
+| TCL Smart TV | 11 | 917 MB | mt5867 | the real TV | the real TV |
+| TD Systems M32C14GLE | 11 | 1 GB | unknown | none found | public datasheet |
+| TD Systems K32DLX15GLE | 9 | 1 GB | ARM Cortex quad-core | none found | public datasheet |
+| TD Systems K32DLX10HS (AOSP, no Play Store assumed) | 9 | 1.5 GB | ARM Cortex-A55 | none found | public datasheet |
+| Xiaomi Mi TV 4A 32" | 9 (not confirmed) | 1 GB | Amlogic T962 | community lists (unverified) | public datasheet |
+| Philips 43PUS7406 | 10 | 2 GB **assumed** | unknown | `org.droidtv.zapster` only | Android version only |
+| Sony BRAVIA KD-43X80J | 10 | 2 GB **assumed** | unknown | community lists (unverified) | Android version only |
+
+**Not supported** (not Android): Hisense 50A7100F (VIDAA U3), LG (webOS), Samsung (Tizen), Roku TV; Fire TV is unsupported too.
+
+An emulator is not a real TV: it validates the logic, not the hardware or that removing a brand's packages is safe. "Assumed" means the data was not found and a plausible value was used. Sources and evidence level of every field: [docs/DEVICES.md](docs/DEVICES.md).
 
 ## Privacy
 

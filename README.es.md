@@ -55,13 +55,27 @@ Solo listas revisadas (nunca "lo que parezca bloat"), paquetes protegidos, backu
 
 ## Qué está probado
 
-| Entorno | Tipo | Qué se probó |
-|---|---|---|
-| TCL Smart TV (mt5867, 940 MB, Android 11) | **Hardware real** | Listas, launcher y apps a mano; `tvlite`: comandos de lectura, simulación y una eliminación + restauración reales de una app de 4 APK |
-| Emuladores: Android 9, 11, 14 (1–2 GB) | Emulado | Flujo completo: limpieza, cambio de launcher, restauración |
-| Perfiles de modelos reales: TCL, TD Systems ×3, Xiaomi, Philips, Sony | Simulado | La lógica, con la identidad, la RAM y los paquetes de cada modelo: 4 de 4 pruebas cada uno |
+**Hardware real**
 
-Un emulador no es una tele real: valida la lógica, no el hardware ni que quitar los paquetes de una marca sea seguro. Detalle por modelo, nivel de evidencia y fuentes: [docs/DEVICES.es.md](docs/DEVICES.es.md).
+| Tele | Android | RAM | Procesador | Qué se probó |
+|---|---|---|---|---|
+| TCL Smart TV | 11 | 917 MB | MediaTek mt5867 | Listas, launcher y apps a mano. `tvlite`: comandos de lectura, simulación y una eliminación + restauración reales de una app de 4 APK. **Aún no:** una limpieza completa desde estado de fábrica, el cambio de launcher y las instalaciones de Play Store con `tvlite` |
+
+**Modelos reales, simulados en un emulador** (identidad, RAM, versión de Android y nombres de paquete del modelo, en un emulador con RAM equivalente; 4 de 4 pruebas cada uno: detección, no se toca nada sin verificar, eliminación + restauración, informe):
+
+| Modelo | Android | RAM | Procesador | Nombres de paquete de | Ficha de |
+|---|---|---|---|---|---|
+| TCL Smart TV | 11 | 917 MB | mt5867 | la tele real | la tele real |
+| TD Systems M32C14GLE | 11 | 1 GB | desconocido | ninguno encontrado | ficha pública |
+| TD Systems K32DLX15GLE | 9 | 1 GB | ARM Cortex quad-core | ninguno encontrado | ficha pública |
+| TD Systems K32DLX10HS (AOSP, se supone sin Play Store) | 9 | 1,5 GB | ARM Cortex-A55 | ninguno encontrado | ficha pública |
+| Xiaomi Mi TV 4A 32" | 9 (sin confirmar) | 1 GB | Amlogic T962 | listas de comunidad (sin verificar) | ficha pública |
+| Philips 43PUS7406 | 10 | 2 GB **supuesto** | desconocido | solo `org.droidtv.zapster` | solo la versión de Android |
+| Sony BRAVIA KD-43X80J | 10 | 2 GB **supuesto** | desconocido | listas de comunidad (sin verificar) | solo la versión de Android |
+
+**No soportadas** (no son Android): Hisense 50A7100F (VIDAA U3), LG (webOS), Samsung (Tizen), Roku TV; Fire TV tampoco está soportada.
+
+Un emulador no es una tele real: valida la lógica, no el hardware ni que quitar los paquetes de una marca sea seguro. "Supuesto" significa que el dato no se encontró y se usó un valor plausible. Fuentes y nivel de evidencia de cada campo: [docs/DEVICES.es.md](docs/DEVICES.es.md).
 
 ## Privacidad
 
