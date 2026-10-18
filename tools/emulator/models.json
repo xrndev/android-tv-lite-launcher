@@ -1,0 +1,115 @@
+{
+  "_doc": "Perfiles de MODELOS REALES para simular en el emulador. Cada dato lleva su nivel de evidencia: 'real' (visto en una tele fisica), 'public-specs' (ficha publica citada en sources) o 'assumed' (no se encontro: se asume algo plausible y se dice). Los nombres de paquete de fabricante salen de listas publicas de la comunidad (sources) y NO estan verificados en teles fisicas, salvo TCL. El emulador NO es el firmware de la marca: sirve para probar la logica de tvlite con identidades, RAM, versiones de Android y nombres de paquete realistas, no para demostrar que quitar esos paquetes sea seguro en esa tele. Los valores reales de getprop (ro.product.*) de estos modelos NO se encontraron: 'model' y 'manufacturer' son nombres comerciales.",
+  "models": {
+    "tcl-smart-tv-mt5867": {
+      "display": "TCL Smart TV (MediaTek mt5867)",
+      "manufacturer": "TCL", "brand": "TCL", "model": "Smart TV", "soc": "mt5867",
+      "android": "11", "api": 30, "ram_mb": 917, "play_store": true, "abis": ["armeabi-v7a", "armeabi"],
+      "avd": "atv11-1gb",
+      "evidence": {"hardware": "real", "software": "real", "packages": "real"},
+      "sources": ["tele fisica del proyecto (probada)"],
+      "vendor_packages": [
+        "com.tcl.esticker", "com.tcl.copydatatotv", "com.tcl.hearaid", "com.tcl.messagebox", "com.tcl.waterfall.overseas",
+        "com.tcl.smartalexa", "com.tcl.dashboard", "com.tcl.usercenter", "com.tcl.useragreement", "com.tcl.suspension",
+        "com.tcl.micmanager", "com.tcl.guard", "com.tcl.partnercustomizer", "com.tcl.initsetup", "com.tcl.ttvs",
+        "com.tcl.keyhelp", "com.tcl.autopair", "com.tcl.ui_mediaCenter", "com.tcl.tv", "com.tcl.tvinput"
+      ],
+      "protected_vendor": ["com.tcl.tv", "com.tcl.tvinput"]
+    },
+    "xiaomi-mi-tv-4a-32": {
+      "display": "Xiaomi Mi TV 4A 32\" (Amlogic T962)",
+      "manufacturer": "Xiaomi", "brand": "Xiaomi", "model": "Mi TV 4A 32", "soc": "Amlogic T962",
+      "android": "9", "api": 28, "ram_mb": 1024, "play_store": true,
+      "avd": "atv9-1gb",
+      "evidence": {"hardware": "public-specs", "software": "assumed (las fuentes dicen PatchWall sobre Android, no la version)", "packages": "community (sin verificar)"},
+      "sources": [
+        "https://www.smartprix.com/tvs/xiaomi-mi-led-smart-tv-4a-32-inch-p1501enlum7y",
+        "https://mi.com/in/mi-led-smart-tv-4a-32/specs",
+        "https://pikabu.ru/story/_14040546",
+        "https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation (solo nombres)"
+      ],
+      "vendor_packages": [
+        "com.miui.systemAdSolution", "com.miui.tv.analytics", "com.xiaomi.mitv.advertise", "com.xiaomi.mitv.store",
+        "com.xiaomi.mitv.payment", "com.mitv.screensaver", "com.xiaomi.tweather", "com.xiaomi.dlnatvservice",
+        "com.xiaomi.mitv.assistant.manual", "com.xiaomi.mitv.upgrade", "com.mitv.download.service",
+        "com.mitv.milinkservice", "com.mitv.videoplayer", "com.xiaomi.mitv.res", "mitv.service",
+        "com.mitv.tvhome", "com.mitv.tvhome.atv", "com.mitv.tvhome.michannel", "com.mitv.tvhome.mitvplus"
+      ],
+      "protected_vendor": ["com.mitv.tvhome", "com.mitv.tvhome.atv", "com.mitv.tvhome.michannel", "com.mitv.tvhome.mitvplus"]
+    },
+    "tdsystems-k32dlx15gle": {
+      "display": "TD Systems K32DLX15GLE 32\" (Android 9, Google certificada)",
+      "manufacturer": "TD Systems", "brand": "TD Systems", "model": "K32DLX15GLE", "soc": "ARM Cortex quad-core 1.1 GHz",
+      "android": "9", "api": 28, "ram_mb": 1024, "play_store": true,
+      "avd": "atv9-1gb",
+      "evidence": {"hardware": "public-specs", "software": "public-specs", "packages": "none found"},
+      "sources": ["https://www.electroprecio.com/led-td-systems-k32dlx15gle-32-hd-smart-tv-wifi-negro"],
+      "vendor_packages": [],
+      "protected_vendor": []
+    },
+    "tdsystems-m32c14gle": {
+      "display": "TD Systems M32C14GLE 32\" (Android TV 11)",
+      "manufacturer": "TD Systems", "brand": "TD Systems", "model": "M32C14GLE", "soc": "unknown",
+      "android": "11", "api": 30, "ram_mb": 1024, "play_store": true,
+      "avd": "atv11-1gb",
+      "evidence": {"hardware": "public-specs (RAM/almacenamiento; el procesador no aparece)", "software": "public-specs", "packages": "none found"},
+      "sources": ["https://www.xatakahome.com/televisores/td-systems-m32c14gle-caracteristicas-precio-ficha-tecnica"],
+      "vendor_packages": [],
+      "protected_vendor": []
+    },
+    "tdsystems-k32dlx10hs": {
+      "display": "TD Systems K32DLX10HS 32\" (Android 9 AOSP, sin Play Store certificada)",
+      "manufacturer": "TD Systems", "brand": "TD Systems", "model": "K32DLX10HS", "soc": "ARM Cortex-A55 quad-core",
+      "android": "9", "api": 28, "ram_mb": 1500, "play_store": false,
+      "avd": "atv9-1gb",
+      "evidence": {"hardware": "public-specs (RAM listada como 1,5 Gb por un minorista)", "software": "public-specs ('Android 9.0 AOSP': se asume que NO trae Play Store)", "packages": "none found"},
+      "sources": ["https://www.pccomponentes.com/td-systems-k32dlx10hs-32-led-hd"],
+      "vendor_packages": [],
+      "protected_vendor": []
+    },
+    "philips-43pus7406": {
+      "display": "Philips 43PUS7406 43\" (Android TV 10)",
+      "manufacturer": "Philips", "brand": "Philips", "model": "43PUS7406/12", "soc": "unknown",
+      "android": "10", "api": 29, "ram_mb": 2048, "play_store": true,
+      "avd": "atv10-2gb",
+      "evidence": {"hardware": "assumed (chipset y RAM no aparecen en ninguna fuente encontrada)", "software": "public-specs (Android TV 10 segun un anuncio y tvsfaq)", "packages": "solo org.droidtv.zapster (visto en un uso real de un Philips)"},
+      "sources": [
+        "https://www.philips.ie/c-p/43PUS7406_12/7000-series-4k-uhd-led-android-tv",
+        "https://www.tvsfaq.com/en/specifications/philips-43put740667",
+        "https://community.openhab.org/t/philips-tv-2016-binding/64579/241"
+      ],
+      "vendor_packages": ["org.droidtv.zapster"],
+      "protected_vendor": ["org.droidtv.zapster"]
+    },
+    "sony-kd43x80j": {
+      "display": "Sony BRAVIA KD-43X80J 43\" (Google TV / Android 10)",
+      "manufacturer": "Sony", "brand": "Sony", "model": "KD-43X80J", "soc": "unknown",
+      "android": "10", "api": 29, "ram_mb": 2048, "play_store": true,
+      "avd": "atv10-2gb",
+      "evidence": {"hardware": "assumed (ninguna fuente fiable da chipset ni RAM)", "software": "public-specs (Android 10 segun devicebeast)", "packages": "community (sin verificar)"},
+      "sources": [
+        "https://www.sony.ca/en/electronics/televisions/x80j-series/specifications",
+        "https://devicebeast.com/display/sony-kd-43x80j-na-425",
+        "https://community.sony.es/t5/android-tv/disabling-system-apps-via-adb/td-p/2403349",
+        "https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation (solo nombres)"
+      ],
+      "vendor_packages": [
+        "com.sony.dtv.calibrationmonitor", "com.sony.dtv.ecodashboard", "com.sony.dtv.livingfit",
+        "com.sony.dtv.notificationcenter", "com.sony.dtv.osat.music", "com.sony.dtv.promos", "com.sony.dtv.recapp",
+        "com.sony.dtv.seeds.iot", "com.sony.dtv.smarthelp", "com.sony.dtv.sonyselect", "com.sony.dtv.timers",
+        "com.sony.dtv.tvx", "com.sony.dtv.sonyshelf", "com.sony.dtv.netflixmanager"
+      ],
+      "protected_vendor": ["com.sony.dtv.tvx"]
+    }
+  },
+  "unsupported": [
+    {
+      "name": "Hisense 50A7100F", "reason": "VIDAA U3 (no es Android)",
+      "sources": ["https://qrcode.hisense.com/appliance/0000000000200028640000000000000000000?lang=en-US"]
+    },
+    {"name": "LG (todas las smart TV actuales)", "reason": "webOS (no es Android)", "sources": []},
+    {"name": "Samsung (todas las smart TV actuales)", "reason": "Tizen (no es Android)", "sources": []},
+    {"name": "Roku TV", "reason": "Roku OS (no es Android)", "sources": []},
+    {"name": "Amazon Fire TV", "reason": "Basado en Android pero sin Play Store y con otro launcher: no soportado", "sources": []}
+  ]
+}

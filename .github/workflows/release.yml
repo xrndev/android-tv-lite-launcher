@@ -40,9 +40,13 @@ jobs:
             launcher/build/SHA256SUMS
 
   exe:
-    name: Ejecutable de Windows
+    name: Ejecutable (${{ matrix.os }})
     needs: apk
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -60,10 +64,16 @@ jobs:
         run: |
           python -m pip install pyinstaller "./installer"
           python installer/build_exe.py
+      - name: Autocomprobacion del ejecutable (datos, Tk y APK incluidos)
+        shell: bash
+        run: |
+          EXE="$(ls installer/dist/tvlite-* | head -1)"
+          chmod +x "$EXE"
+          "$EXE" selftest
       - uses: actions/upload-artifact@v4
         with:
-          name: exe
-          path: installer/dist/tvlite.exe
+          name: exe-${{ matrix.os }}
+          path: installer/dist/tvlite-*
 
   publish:
     name: Publicar release
@@ -78,7 +88,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd dist
-          cp launcher/litelauncher-v*.apk exe/tvlite.exe .
-          sha256sum litelauncher-v*.apk tvlite.exe > SHA256SUMS
+          cp launcher/litelauncher-v*.apk .
+          cp exe-*/tvlite-* .
+          sha256sum litelauncher-v*.apk tvlite-* > SHA256SUMS
           gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --generate-notes \
-            litelauncher-v*.apk tvlite.exe SHA256SUMS
+            litelauncher-v*.apk tvlite-* SHA256SUMS

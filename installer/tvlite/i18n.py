@@ -59,6 +59,16 @@ STRINGS = {
         "copy_report": "Copiar informe de mi tele",
         "report_copied": "Informe copiado: revísalo antes de pegarlo en un issue de GitHub.",
         "report_wait": "Preparando el informe...",
+        "share_title": "¿Ayudar a mejorar tvlite?",
+        "share_intro": (
+            "Puedes enviar al desarrollador un informe ANÓNIMO de cómo ha ido. Es voluntario: no se envía nada "
+            "si no pulsas «Enviar». Incluye modelo, Android, procesador y RAM de la tele, tu sistema operativo, qué "
+            "pasos fueron bien o mal y el error (sin IP, nombre de usuario ni número de serie). No incluye tus apps, "
+            "cuentas ni el nombre de tu red. Este es el contenido exacto:"
+        ),
+        "share_send": "Enviar informe", "share_skip": "No, gracias",
+        "share_sent": "Informe enviado. ¡Gracias!", "share_failed": "No se pudo enviar el informe: ",
+        "share_sending": "Enviando...",
     },
     "en": {
         "title": "TV Lite - optimize your Android TV",
@@ -112,6 +122,16 @@ STRINGS = {
         "copy_report": "Copy my TV report",
         "report_copied": "Report copied: review it before pasting it into a GitHub issue.",
         "report_wait": "Preparing the report...",
+        "share_title": "Help improve tvlite?",
+        "share_intro": (
+            "You can send the developer an ANONYMOUS report of how it went. It is voluntary: nothing is sent unless "
+            "you press 'Send'. It includes the TV's model, Android, SoC and RAM, your operating system, which steps "
+            "worked or failed and the error (with IPs, user names and serial numbers removed). It does not include "
+            "your apps, accounts or network name. This is the exact content:"
+        ),
+        "share_send": "Send report", "share_skip": "No, thanks",
+        "share_sent": "Report sent. Thank you!", "share_failed": "Could not send the report: ",
+        "share_sending": "Sending...",
     },
 }
 
@@ -194,6 +214,9 @@ _EN_RULES: list = [
      "Could not get platform-tools' official checksum; not installing it for safety"),
     (r"^El checksum de platform-tools no coincide con el que publica Google.*$",
      "platform-tools' checksum does not match the one Google publishes. If Google has just released a new version, retry in a few minutes."),
+    (r"^Play Store no esta instalado en esta tele: no se instala (.+)$",
+     r"Play Store is not installed on this TV: not installing \1"),
+    (r"^Error inesperado \((.*)\)\. Copia de seguridad en (.+)$", r"Unexpected error (\1). Backup at \2"),
     (r"^Mira la tele y acepta el dialogo.*$", "Look at the TV and accept the 'Allow USB debugging' dialog."),
 ]
 _EN_COMPILED = [(re.compile(pattern, re.S), repl) for pattern, repl in _EN_RULES]

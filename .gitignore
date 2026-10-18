@@ -13,3 +13,9 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 installer/tvlite/data/litelauncher.apk
+# Secretos: el token del bot y cualquier .env viven solo en el servidor del relé, nunca en el repositorio
+.env
+*.env
+!.env.example
+# Cache local de Wrangler (contiene el correo y el id de la cuenta de Cloudflare): nunca al repositorio
+.wrangler/

@@ -45,6 +45,7 @@ def build_report(adb, info: DeviceInfo, catalog: Optional[dict] = None) -> str:
         f"- **Android:** {info.android_release} (API {info.sdk}) - **ABI:** {', '.join(info.abis) or 'unknown'}",
         f"- **SoC / platform:** {info.soc or 'unknown'}",
         f"- **RAM:** {info.ram_mb} MB (profile: {info.profile}) - **available now:** {metrics['ram_available_mb']} MB",
+        f"- **Play Store:** {'yes' if info.has_play_store else 'NO (apps cannot be installed from it)'}",
         f"- **Free storage:** {info.storage_free_mb if info.storage_free_mb is not None else 'unknown'} MB",
         f"- **Screen:** {info.resolution or 'unknown'} ({info.density or '?'} dpi)",
         f"- **Launcher(s):** {', '.join(homes) or 'unknown'}",

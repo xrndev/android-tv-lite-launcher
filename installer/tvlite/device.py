@@ -29,6 +29,7 @@ class DeviceInfo:
     density: Optional[int] = None
     resolution: Optional[str] = None
     simulated: bool = False
+    has_play_store: bool = True
 
     @property
     def profile(self) -> str:
@@ -101,6 +102,7 @@ def detect(adb, serial: str = "") -> DeviceInfo:
     info.density = int(density.group(1)) if density else None
     size = re.search(r"(\d+x\d+)\s*$", adb.shell("wm size"))
     info.resolution = size.group(1) if size else None
+    info.has_play_store = "package:com.android.vending" in adb.shell("pm list packages com.android.vending")
     return _simulate(info)
 
 
@@ -122,6 +124,8 @@ _DESCRIBE = {
         "unknown_device": "Dispositivo desconocido", "soc": "Procesador/plataforma", "unknown": "desconocido",
         "unknown_abi": "ABI desconocida", "ram": "RAM", "ram_unknown": "RAM: desconocida",
         "storage": "Almacenamiento libre", "screen": "Pantalla", "profile": "Perfil",
+        "play_store": "Play Store", "yes": "sí", "no": "NO",
+        "no_play": "Sin Play Store no se pueden instalar apps desde ahí; la limpieza y el launcher sí funcionan.",
         "ultra_low": "RAM muy baja: optimización máxima", "low": "RAM baja: optimización recomendada",
         "normal": "RAM suficiente: solo limpieza segura",
         "simulated": "(SIMULADO: datos sobrescritos con TVLITE_SIMULATE, solo para pruebas)",
@@ -130,6 +134,8 @@ _DESCRIBE = {
         "unknown_device": "Unknown device", "soc": "SoC / platform", "unknown": "unknown",
         "unknown_abi": "unknown ABI", "ram": "RAM", "ram_unknown": "RAM: unknown",
         "storage": "Free storage", "screen": "Screen", "profile": "Profile",
+        "play_store": "Play Store", "yes": "yes", "no": "NO",
+        "no_play": "Without Play Store, apps cannot be installed from it; cleanup and the launcher still work.",
         "ultra_low": "Very low RAM: maximum optimization", "low": "Low RAM: recommended optimization",
         "normal": "Enough RAM: safe cleanup only",
         "simulated": "(SIMULATED: data overridden with TVLITE_SIMULATE, for testing only)",
@@ -152,6 +158,9 @@ def describe(info: DeviceInfo, lang: str = "es") -> str:
     if info.resolution:
         lines.append(f"{w['screen']}: {info.resolution} ({info.density or '?'} dpi)")
     lines.append(f"{w['profile']}: {w[info.profile]}")
+    lines.append(f"{w['play_store']}: {w['yes'] if info.has_play_store else w['no']}")
+    if not info.has_play_store:
+        lines.append(w["no_play"])
     if info.simulated:
         lines.append(w["simulated"])
     return "\n".join(lines)

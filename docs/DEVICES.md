@@ -47,7 +47,29 @@ Emulator findings that changed the code:
 
 What the emulator does **not** cover: the real GPU and SoC, vendor-specific packages (fixtures only create empty apps with those names), nor the behavior of Play Store apps with `tvlite` (the `android-tv` images for API 28/30 do not include Play Store).
 
-Unit tests (74 plus 6 integration) run against a simulated TV (`installer/tests/fake_adb.py`).
+Unit tests (126, plus the emulator suites) run against a simulated TV (`installer/tests/fake_adb.py`).
+
+## Simulated real models
+
+There is **no emulator of real TV brands**: manufacturers do not publish their firmware, and emulators only offer generic Android TV images. What exists here are **profiles of real models** ([`tools/emulator/models.json`](../tools/emulator/models.json)): the identity, RAM and Android version of each model, plus vendor package names taken from public community lists, applied to an emulator with the matching RAM and API. They test **tvlite's logic**, not that removing those packages is safe on the physical TV. Run one with `python tools/emulator/run_models.py <id>`.
+
+Every field of a profile states its evidence: **real** (seen on a physical TV), **public specs** (a cited datasheet) or **assumed** (not found; stated as such). The real `getprop` values of these models were **not found**: model names are commercial names.
+
+| Model | Android / RAM | SoC | Evidence (hardware / packages) | Emulator result |
+|---|---|---|---|---|
+| TCL Smart TV (mt5867) | 11 / 917 MB | mt5867 | real / real | **4 of 4 passed** (2026-10-18) |
+| TD Systems M32C14GLE | 11 / 1 GB | unknown | public specs / none found | **4 of 4 passed** (2026-10-18) |
+| Xiaomi Mi TV 4A 32" | 9 (not confirmed) / 1 GB | Amlogic T962 | public specs / community (unverified) | **4 of 4 passed** (2026-10-18) |
+| TD Systems K32DLX15GLE | 9 / 1 GB | ARM Cortex quad-core | public specs / none found | **4 of 4 passed** (2026-10-18) |
+| TD Systems K32DLX10HS | 9 AOSP (no Play Store assumed) / 1.5 GB | ARM Cortex-A55 | public specs / none found | **4 of 4 passed** (2026-10-18), including that Play apps are skipped with a clear message |
+| Philips 43PUS7406 | 10 / 2 GB **assumed** | unknown | Android version from specs; chipset and RAM **not found** | **4 of 4 passed** (2026-10-18; it needed three attempts because the PC ran out of memory twice) |
+| Sony KD-43X80J | 10 / 2 GB **assumed** | unknown | Android version from specs; RAM **not found**; packages from community lists | **4 of 4 passed** (2026-10-18) |
+
+Sources for each model are in `models.json`. What was **not** found: any public list of vendor packages for **Philips, Hisense and TD Systems**, so for those `tvlite` does only the generic Android and Google cleanup.
+
+**Examples of TVs that do not work** because they are not Android: **Hisense 50A7100F** (VIDAA U3), LG (webOS), Samsung (Tizen), Roku TV. Amazon Fire TV is Android-based but unsupported (no Play Store, different launcher).
+
+The Sony and Xiaomi lists in `tvlite` come from public community sources, are **unverified** and are never applied or preselected by default. A user reported that on a Sony TV, removing `sonyshelf` made the input sources disappear from the Home screen.
 
 ## Reported by users
 

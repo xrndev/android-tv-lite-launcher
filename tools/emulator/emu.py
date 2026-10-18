@@ -138,9 +138,10 @@ def fixture(name: str) -> dict:
     return json.loads((HERE / "fixtures.json").read_text(encoding="utf-8"))["fixtures"][name]
 
 
-def install_fixture(name: str) -> dict:
-    fx = fixture(name)
+def install_packages(packages: list[str]) -> None:
+    """Instala apps vacias (stubs) con esos nombres de paquete, sin pisar paquetes de sistema reales."""
     out = HERE / "build" / "stubs"
+
     # 'pm list packages -u' incluye los paquetes quitados para el usuario: si la imagen de Android
     # ya trae un paquete de sistema con ese nombre (p. ej. Play Juegos en Android 14) no se pisa.
     def listed(*flags: str) -> set[str]:
@@ -149,7 +150,7 @@ def install_fixture(name: str) -> dict:
 
     system_known = listed("-s", "-u")
     all_known = listed("-u")
-    for package in [*fx["stubs"], *fx.get("protected_stubs", [])]:
+    for package in packages:
         installed = adb("shell", "pm", "path", package, check=False).stdout.strip()
         if installed or package in system_known:
             continue
@@ -158,7 +159,46 @@ def install_fixture(name: str) -> dict:
         res = adb("install", str(make_stub(package, out)), check=False)
         if "Success" not in res.stdout:
             sys.exit(f"No se pudo instalar el stub {package}: {res.stdout} {res.stderr}")
+
+
+def install_fixture(name: str) -> dict:
+    fx = fixture(name)
+    install_packages([*fx["stubs"], *fx.get("protected_stubs", [])])
     return fx
+
+
+def load_models() -> dict:
+    return json.loads((HERE / "models.json").read_text(encoding="utf-8"))
+
+
+def install_model(model_id: str) -> dict:
+    """Instala los paquetes de fabricante de un modelo real y, si procede, el stub de Play Store."""
+    model = load_models()["models"][model_id]
+    packages = list(model["vendor_packages"])
+    if model["play_store"]:
+        packages.append("com.android.vending")
+    install_packages(packages)
+    return model
+
+
+def model_simulation(model: dict) -> dict:
+    """Valores para TVLITE_SIMULATE: identidad y hardware del modelo (la RAM real la fija el AVD)."""
+    sim = {"manufacturer": model["manufacturer"], "brand": model["brand"], "model": model["model"],
+           "soc": model["soc"], "ram_mb": model["ram_mb"], "has_play_store": model["play_store"]}
+    if model.get("abis"):
+        sim["abis"] = model["abis"]
+    return sim
+
+
+def cmd_models(_args) -> None:
+    data = load_models()
+    for model_id, m in data["models"].items():
+        ev = m["evidence"]
+        print(f"{model_id:24} Android {m['android']:>2}  {m['ram_mb']:>4} MB  AVD {m['avd']:10} "
+              f"hw={ev['hardware'].split(' ')[0]:12} pkgs={ev['packages'].split(' ')[0]}")
+    print("\nNo soportadas (no son Android):")
+    for u in data["unsupported"]:
+        print(f"  {u['name']}: {u['reason']}")
 
 
 def cmd_fixture(args) -> None:
@@ -181,6 +221,7 @@ def main() -> None:
             p.add_argument("--window", action="store_true", help="mostrar la ventana del emulador")
         p.set_defaults(func=func)
     sub.add_parser("stop").set_defaults(func=cmd_stop)
+    sub.add_parser("models", help="lista los modelos reales simulables").set_defaults(func=cmd_models)
     p = sub.add_parser("fixture")
     p.add_argument("name", choices=list(json.loads((HERE / "fixtures.json").read_text(encoding="utf-8"))["fixtures"]))
     p.set_defaults(func=cmd_fixture)

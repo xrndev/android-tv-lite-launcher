@@ -33,6 +33,7 @@
     "com.android.bluetooth",
     "com.android.tethering",
     "com.google.android.gms.",
+    "com.mitv.tvhome",
     "android."
   ],
   "protected_suffixes": [".overlay", ".rro", ".resoverlay", ".auto_generated_rro_product__", ".auto_generated_rro_vendor__"],

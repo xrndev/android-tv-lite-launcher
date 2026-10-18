@@ -9,7 +9,7 @@ import tkinter as tk
 from tkinter import messagebox, scrolledtext, ttk
 from typing import Callable, Optional
 
-from . import android, appinstall, debloat, device as devmod, report as reportmod, runner
+from . import android, appinstall, debloat, device as devmod, report as reportmod, runner, telemetry
 from .adb import Adb, AdbError, ensure_adb
 from .i18n import default_language, translate, translate_message
 from .restore import restore
@@ -315,10 +315,47 @@ class App:
             if not result.dry_run:
                 self._log("")
                 self._log(self.t("finish_security"))
+                self.offer_report(telemetry.build_event(self.info, result))
             if result.dry_run:
                 self.next_btn.config(state="disabled")
 
         self.work(job, done)
+
+    def offer_report(self, event: dict) -> None:
+        """Dialogo de consentimiento: muestra el contenido exacto y solo envia si el usuario pulsa Enviar."""
+        if not telemetry.enabled():
+            return
+        win = tk.Toplevel(self.root)
+        win.title(self.t("share_title"))
+        win.geometry("720x520")
+        ttk.Label(win, text=self.t("share_intro"), wraplength=680, justify="left").pack(anchor="w", padx=16, pady=(14, 6))
+        box = scrolledtext.ScrolledText(win, height=16, width=90)
+        box.insert("end", telemetry.preview(event))
+        box.config(state="disabled")
+        box.pack(fill="both", expand=True, padx=16, pady=6)
+        status = ttk.Label(win, text="", wraplength=680, justify="left")
+        status.pack(anchor="w", padx=16)
+        row = ttk.Frame(win)
+        row.pack(fill="x", padx=16, pady=12)
+        send_btn = ttk.Button(row, text=self.t("share_send"))
+        send_btn.pack(side="right")
+        ttk.Button(row, text=self.t("share_skip"), command=win.destroy).pack(side="right", padx=8)
+
+        def do_send() -> None:
+            send_btn.config(state="disabled")
+            status.config(text=self.t("share_sending"))
+
+            def done(result) -> None:
+                ok, detail = result if not isinstance(result, Exception) else (False, str(result))
+                status.config(text=self.t("share_sent") if ok else self.t("share_failed") + detail)
+                if ok:
+                    win.after(1500, win.destroy)
+                else:
+                    send_btn.config(state="normal")
+
+            self.work(lambda: telemetry.send(event), done)
+
+        send_btn.config(command=do_send)
 
     def do_restore(self) -> None:
         if self.busy or not self.summary:

@@ -1,0 +1,13 @@
+name = "tvlite-relay"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# Limite de envios por IP (el id de un KV no es un secreto; cada despliegue propio crea el suyo con
+# `npx wrangler kv namespace create RATE`).
+[[kv_namespaces]]
+binding = "RATE"
+id = "ba56fe0a09eb443ba91aea1810bb123b"
+
+# Los secretos NO van en este fichero (ni en el repositorio):
+#   npx wrangler secret put TELEGRAM_BOT_TOKEN
+#   npx wrangler secret put TELEGRAM_CHAT_ID

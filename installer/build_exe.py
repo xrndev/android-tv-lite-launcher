@@ -9,6 +9,7 @@ El resultado queda en installer/dist/.
 from __future__ import annotations
 
 import os
+import platform
 import shutil
 import subprocess
 import sys
@@ -17,6 +18,14 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 APK = HERE.parent / "launcher" / "build" / "litelauncher.apk"
 BUNDLED = HERE / "tvlite" / "data" / "litelauncher.apk"
+
+
+def artifact_name() -> str:
+    """tvlite-windows-x64.exe, tvlite-macos-arm64, tvlite-linux-x64..."""
+    system = {"Windows": "windows", "Darwin": "macos", "Linux": "linux"}.get(platform.system(), platform.system().lower())
+    machine = platform.machine().lower()
+    arch = {"amd64": "x64", "x86_64": "x64", "arm64": "arm64", "aarch64": "arm64"}.get(machine, machine)
+    return f"tvlite-{system}-{arch}" + (".exe" if system == "windows" else "")
 
 
 def main() -> None:
@@ -39,7 +48,10 @@ def main() -> None:
         )
     finally:
         BUNDLED.unlink(missing_ok=True)  # el APK empaquetado no se versiona
-    print(f"Listo: {HERE / 'dist'}")
+    built = HERE / "dist" / ("tvlite.exe" if os.name == "nt" else "tvlite")
+    final = HERE / "dist" / artifact_name()
+    shutil.copy2(built, final)
+    print(f"Listo: {final}")
 
 
 if __name__ == "__main__":

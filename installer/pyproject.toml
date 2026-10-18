@@ -20,7 +20,7 @@ tvlite = "tvlite.cli:main"
 include = ["tvlite*"]
 
 [tool.setuptools.package-data]
-tvlite = ["data/*.json"]
+tvlite = ["data/*.json", "data/community/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

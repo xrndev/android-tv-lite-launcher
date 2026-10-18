@@ -1,0 +1,41 @@
+{
+  "lists": [
+    {
+      "id": "sony-community-unverified",
+      "name": "Sony BRAVIA (comunidad, SIN VERIFICAR)",
+      "match": {
+        "manufacturer": [
+          "Sony"
+        ]
+      },
+      "notes": "Solo nombres de paquete, sin verificar en ninguna tele fisica. Origen: lista de UAD-ng (solo los nombres) y un hilo de la comunidad de Sony. No se aplica salvo --include-unverified y nunca se preselecciona.",
+      "sources": [
+        "https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation (resources/assets/uad_lists.json, solo nombres)",
+        "https://community.sony.es/t5/android-tv/disabling-system-apps-via-adb/td-p/2403349"
+      ],
+      "packages": [
+        {
+          "pkg": "com.sony.dtv.sonyselect",
+          "label": "Sony Select",
+          "tier": "optional"
+        },
+        {
+          "pkg": "com.sony.dtv.sonyshelf",
+          "label": "Sony Shelf",
+          "tier": "optional",
+          "breaks": "Un usuario informo de que las entradas (HDMI, etc.) desaparecieron de la pantalla de inicio al quitarlo."
+        },
+        {
+          "pkg": "com.sony.dtv.netflixmanager",
+          "label": "Gestor de Netflix de Sony",
+          "tier": "optional"
+        },
+        {
+          "pkg": "com.sony.dtv.promos",
+          "label": "Promociones de Sony",
+          "tier": "optional"
+        }
+      ]
+    }
+  ]
+}

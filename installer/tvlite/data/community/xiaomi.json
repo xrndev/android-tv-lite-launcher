@@ -1,0 +1,66 @@
+{
+  "lists": [
+    {
+      "id": "xiaomi-community-unverified",
+      "name": "Xiaomi Mi TV (comunidad, SIN VERIFICAR)",
+      "match": {
+        "manufacturer": [
+          "Xiaomi"
+        ]
+      },
+      "notes": "Solo nombres de paquete, sin verificar en ninguna tele fisica. Origen: guia de un usuario (pikabu.ru/story/_14040546) y nombres de UAD-ng. Los launchers com.mitv.tvhome* estan protegidos y los gestiona el cambio de launcher.",
+      "sources": [
+        "https://pikabu.ru/story/_14040546",
+        "https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation (solo nombres)"
+      ],
+      "packages": [
+        {
+          "pkg": "com.miui.systemAdSolution",
+          "label": "Publicidad del sistema (MIUI)",
+          "tier": "recommended"
+        },
+        {
+          "pkg": "com.miui.tv.analytics",
+          "label": "Analitica de Mi TV",
+          "tier": "recommended"
+        },
+        {
+          "pkg": "com.xiaomi.mitv.advertise",
+          "label": "Anuncios de PatchWall",
+          "tier": "recommended"
+        },
+        {
+          "pkg": "com.xiaomi.mitv.store",
+          "label": "Tienda de apps de Xiaomi",
+          "tier": "optional"
+        },
+        {
+          "pkg": "com.xiaomi.mitv.payment",
+          "label": "Pagos de Xiaomi",
+          "tier": "optional"
+        },
+        {
+          "pkg": "com.mitv.screensaver",
+          "label": "Salvapantallas de Mi TV",
+          "tier": "optional"
+        },
+        {
+          "pkg": "com.xiaomi.tweather",
+          "label": "Tiempo de Xiaomi",
+          "tier": "optional"
+        },
+        {
+          "pkg": "com.xiaomi.dlnatvservice",
+          "label": "DLNA de Xiaomi",
+          "tier": "optional",
+          "breaks": "Pierdes la reproduccion DLNA desde otros dispositivos."
+        },
+        {
+          "pkg": "com.xiaomi.mitv.assistant.manual",
+          "label": "Manual del asistente",
+          "tier": "optional"
+        }
+      ]
+    }
+  ]
+}

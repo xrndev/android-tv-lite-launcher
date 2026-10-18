@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import re
+import traceback
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Optional
@@ -42,6 +43,7 @@ class Summary:
     launcher_error: str = ""
     dry_run: bool = False
     error: str = ""  # conexion perdida u otro fallo a mitad: el backup permite restaurar
+    trace: str = ""  # traza del error (para el informe opcional); se limpia de datos personales antes de enviarse
     metrics_before: Optional[dict] = None
     metrics_after: Optional[dict] = None
 
@@ -122,6 +124,11 @@ def run(
         # La tele se durmio o se cayo la red y no se pudo recuperar: no se pierde nada, el diario ya
         # esta en disco y 'restore' deshace lo aplicado hasta ahora.
         summary.error = f"Se perdio la conexion con la tele ({exc}). Copia de seguridad en {journal.dir}"
+        summary.trace = traceback.format_exc()
+        progress(summary.error)
+    except Exception as exc:  # noqa: BLE001 - un fallo inesperado no debe dejar al usuario sin saber donde esta el backup
+        summary.error = f"Error inesperado ({type(exc).__name__}: {exc}). Copia de seguridad en {journal.dir}"
+        summary.trace = traceback.format_exc()
         progress(summary.error)
     return summary
 
@@ -155,8 +162,14 @@ def _run_steps(adb, info, options, progress, journal, summary) -> None:
     catalog_apps = {a["id"]: a for a in appinstall.load_apps()["apps"]}
     for app_id in options.app_ids:
         app = catalog_apps.get(app_id)
-        if app:
-            summary.apps.append(appinstall.install_app(adb, app, info.abis, journal, progress))
+        if not app:
+            continue
+        if app.get("method") == "play" and not info.has_play_store:
+            message = f"Play Store no esta instalado en esta tele: no se instala {app['name']}"
+            progress(message)
+            summary.apps.append(appinstall.AppResult(app["id"], False, message))
+            continue
+        summary.apps.append(appinstall.install_app(adb, app, info.abis, journal, progress))
 
     if options.activate_launcher:
         apk = options.launcher_apk or launcher.find_launcher_apk()

@@ -13,6 +13,8 @@ def isolated_home(request, tmp_path, monkeypatch):
     """Backups y descargas van a una carpeta temporal. En las pruebas unitarias las esperas no
     duermen (FakeAdb es determinista); en las de integracion con emulador real se espera de verdad."""
     monkeypatch.setenv("TVLITE_HOME", str(tmp_path / "tvlite-home"))
+    # Las pruebas NUNCA deben poder enviar nada al rele real: se desactiva salvo que una prueba lo active.
+    monkeypatch.setenv("TVLITE_REPORT_URL", "")
     if "integration" not in Path(str(request.node.fspath)).parts:
         monkeypatch.setattr(android, "wait_for", lambda predicate, timeout=0, interval=0: bool(predicate()))
     return tmp_path

@@ -6,8 +6,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from . import android, appinstall, debloat, device as devmod, report as reportmod, runner
-from .adb import Adb, AdbError, data_dir, ensure_adb
+from . import android, appinstall, debloat, device as devmod, report as reportmod, runner, telemetry
+from .adb import Adb, AdbError, data_dir, ensure_adb, find_adb
 from .i18n import default_language, translate, translate_message
 from .restore import restore
 
@@ -101,7 +101,29 @@ def cmd_apply(args) -> int:
         print(f"No se pudo instalar {app.app_id}: {app.detail}")
     if not args.dry_run:
         print("\n" + translate(default_language(), "finish_security"))
+        if not args.yes or args.send_report:
+            offer_report(info, summary, args.send_report)
     return 1 if (summary.error or summary.launcher_error or failed or (summary.debloat and summary.debloat.aborted)) else 0
+
+
+def offer_report(info, summary, send_flag: bool, ask=input) -> None:
+    """Ofrece enviar el informe anonimo. Solo si hay relé configurado; nunca se envia sin que el usuario lo pida
+    (--send-report) o lo confirme escribiendo 's'. Con --yes NO se pregunta ni se envia."""
+    if not telemetry.enabled():
+        return
+    event = telemetry.build_event(info, summary)
+    lang = default_language()
+    print("\n" + translate(lang, "share_intro"))
+    print(telemetry.preview(event))
+    if not send_flag:
+        try:
+            answer = ask(translate(lang, "share_send") + "? [s/N] ").strip().lower()
+        except EOFError:
+            return
+        if answer not in ("s", "si", "sí", "y", "yes"):
+            return
+    ok, detail = telemetry.send(event)
+    print(translate(lang, "share_sent") if ok else translate(lang, "share_failed") + detail)
 
 
 def cmd_restore(args) -> int:
@@ -124,6 +146,37 @@ def cmd_apps(args) -> int:
         extra = f"  v{app['version']} (verificada {app['checked']}, SHA-256 fijado)" if app.get("sha256") else ""
         print(f"{app['id']:12} {data['categories'][app['category']]:22} {app['name']}{extra}")
     return 0
+
+
+def cmd_selftest(args) -> int:
+    """Comprueba que esta copia (sobre todo un ejecutable empaquetado) trae todo lo necesario, sin tele
+    y sin abrir ninguna ventana: datos, interfaz grafica disponible y APK del launcher. Lo usa el CI."""
+    import platform
+
+    from . import launcher
+
+    problems: list[str] = []
+    print(f"tvlite {__import__('tvlite').__version__} en {platform.system()} {platform.machine()}, Python {platform.python_version()}")
+    try:
+        problems += debloat.validate_catalog(debloat.load_catalog())
+        print(f"  listas de paquetes: OK ({len(debloat.load_catalog()['lists'])} listas)")
+        print(f"  catalogo de apps: OK ({len(appinstall.load_apps()['apps'])} apps)")
+    except Exception as exc:  # noqa: BLE001
+        problems.append(f"no se pueden leer los datos incluidos: {exc}")
+    try:
+        import tkinter
+
+        print(f"  interfaz grafica (Tk {tkinter.TkVersion}): OK")
+    except Exception as exc:  # noqa: BLE001
+        problems.append(f"Tkinter no esta disponible: {exc}")
+    apk = launcher.find_launcher_apk()
+    print(f"  APK del launcher incluido: {'si' if apk else 'no (se usara el compilado en el repo, si existe)'}")
+    adb_path = find_adb()
+    print(f"  ADB: {adb_path or 'no instalado; se descargara y verificara solo al conectar'}")
+    for problem in problems:
+        print(f"  PROBLEMA: {problem}")
+    print("OK" if not problems else "FALLO")
+    return 0 if not problems else 1
 
 
 def cmd_gui(args) -> int:
@@ -155,6 +208,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--no-debloat", action="store_true")
     p.add_argument("--no-launcher", action="store_true")
     p.add_argument("--include-unverified", action="store_true")
+    p.add_argument("--send-report", action="store_true",
+                   help="envia el informe anonimo al terminar (muestra antes el contenido exacto)")
     p.add_argument("--allow-irreversible", action="store_true",
                    help="quita apps de usuario aunque no se pueda guardar su APK (no se podran restaurar)")
     p.set_defaults(func=cmd_apply)
@@ -165,6 +220,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("backups", help="lista las copias de seguridad").set_defaults(func=cmd_backups)
     sub.add_parser("apps", help="lista las apps instalables").set_defaults(func=cmd_apps)
     sub.add_parser("gui", help="abre el asistente grafico").set_defaults(func=cmd_gui)
+    sub.add_parser("selftest", help="comprueba que esta copia esta completa (sin tele)").set_defaults(func=cmd_selftest)
     return parser
 
 
