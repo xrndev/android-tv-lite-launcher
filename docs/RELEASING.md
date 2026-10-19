@@ -37,7 +37,7 @@ For GitHub Actions, add these repository secrets (Settings -> Secrets and variab
 3. `.github/workflows/release.yml` builds the signed APK and the Windows executable and attaches them to a GitHub Release
    together with a `SHA256SUMS` file.
 
-> The release workflow has **not been run yet**. Test it on a private repository / pre-release tag first.
+> While the project is alpha, releases are published as **pre-releases** (v0.1.0 was the first, built by this workflow).
 
 Locally (no CI): `LITE_KEYSTORE=/path/to/keystore LITE_KS_PASS=... bash launcher/release.sh`.
 
