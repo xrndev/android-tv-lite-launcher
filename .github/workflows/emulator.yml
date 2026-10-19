@@ -38,6 +38,8 @@ jobs:
         with:
           python-version: "3.12"
       - uses: android-actions/setup-android@v3
+        with:
+          packages: ""
 
       - name: "Compilar el launcher (build-tools 35, porque el d8 de 34 falla con algunos .class)"
         run: |

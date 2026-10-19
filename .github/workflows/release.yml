@@ -21,6 +21,8 @@ jobs:
           distribution: temurin
           java-version: "17"
       - uses: android-actions/setup-android@v3
+        with:
+          packages: ""
       - name: Compilar y firmar el launcher
         env:
           LITE_KEYSTORE_B64: ${{ secrets.LITE_KEYSTORE_B64 }}
