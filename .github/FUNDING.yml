@@ -1,8 +1,5 @@
-# Botón "Sponsor" de GitHub. ESTÁ DESACTIVADO hasta que el mantenedor ponga su enlace.
-# Para activarlo, descomenta la línea de abajo y sustituye la URL por tu enlace real de PayPal
-# (paypal.me/tuusuario o la URL de un botón de donación de PayPal):
-#
-# custom: ["https://www.paypal.me/TU_USUARIO"]
+# Botón "Sponsor" de GitHub.
+buy_me_a_coffee: xrndev
 #
 # También se admiten otras plataformas, p. ej.:
 # github: [xrndev]
