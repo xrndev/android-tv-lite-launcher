@@ -2,9 +2,9 @@
 
 [English](README.md) · **Español**
 
-Optimiza una Android TV con poca RAM **de forma reversible**: limpieza segura, un launcher nativo diminuto y las apps que elijas, todo desde tu PC por ADB.
-
 <a href="https://buymeacoffee.com/xrndev"><img src="https://img.shields.io/badge/Inv%C3%ADtame%20a%20un%20caf%C3%A9-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Invítame a un café"></a>
+
+Optimiza una Android TV con poca RAM **de forma reversible**: limpieza segura, un launcher nativo diminuto y las apps que elijas, todo desde tu PC por ADB.
 
 > **Alfa.** Probado en **una tele real** (TCL, Android 11, 940 MB de RAM) y en emuladores. El instalador solo se ha usado en parte en esa tele. Ver [qué está probado](#qué-está-probado).
 

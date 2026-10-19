@@ -2,9 +2,9 @@
 
 **English** · [Español](README.es.md)
 
-Optimize a low-RAM Android TV **reversibly**: safe debloat, a tiny native launcher and the apps you pick, all from your PC over ADB.
-
 <a href="https://buymeacoffee.com/xrndev"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=black" alt="Buy me a coffee"></a>
+
+Optimize a low-RAM Android TV **reversibly**: safe debloat, a tiny native launcher and the apps you pick, all from your PC over ADB.
 
 > **Alpha.** Tested on **one real TV** (TCL, Android 11, 940 MB RAM) and on emulators. The installer has only been partly exercised on that TV. See [what is tested](#tested-so-far).
 
