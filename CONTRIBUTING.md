@@ -56,6 +56,10 @@ python -m pytest                       # unit tests, with FakeAdb (no hardware)
 - Emulator tests: see the README → *Android TV emulators*. Add a row to `docs/DEVICES.md` only after you have actually run the profile.
 - Comments in the code are mostly Spanish; English is welcome for new code.
 
+## Pull requests
+
+`main` is protected: nobody pushes to it directly. Fork the repo (or create a branch), push your change there and open a pull request; the maintainer reviews and merges it. The PR template lists what to check.
+
 ## Honesty about what is tested
 
 Do not mark a device as *tested* if you only saw it in an emulator, or an app as `verified` if you have not seen its package on a real TV. The table in [docs/DEVICES.md](docs/DEVICES.md) separates **real hardware**, **emulated** and **reported** on purpose.

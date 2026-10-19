@@ -22,7 +22,7 @@ No Python or anything else needed. Download your file from [Releases](../../rele
 
 It detects your system and downloads, verifies and uses Google's ADB by itself. Check downloads against `SHA256SUMS`; the files are not code-signed, so Windows/macOS will ask you to confirm once.
 
-> **No release is published yet** (it needs the maintainer's signing key, see [RELEASING](docs/RELEASING.md)). Until then: [build from source](docs/DEVELOPMENT.md).
+> **Which file?** Only the one for your PC (table above). The launcher APK is already inside it: you do not need `litelauncher-*.apk` or *Source code*. This is an alpha pre-release; to build it yourself see [DEVELOPMENT](docs/DEVELOPMENT.md).
 
 ## Which TVs work
 

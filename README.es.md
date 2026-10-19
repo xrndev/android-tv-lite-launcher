@@ -22,7 +22,7 @@ No necesitas Python ni nada más. Descarga tu archivo desde [Releases](../../rel
 
 Detecta tu sistema y descarga, verifica y usa el ADB de Google él solo. Comprueba lo descargado con `SHA256SUMS`; los archivos no están firmados, así que Windows/macOS te pedirán confirmar una vez.
 
-> **Aún no hay ningún release publicado** (hace falta la clave de firma del mantenedor, ver [RELEASING](docs/RELEASING.md)). Mientras tanto: [compilar desde el código](docs/DEVELOPMENT.es.md).
+> **¿Qué archivo?** Solo el de tu PC (tabla de arriba). El APK del launcher ya va dentro: no necesitas `litelauncher-*.apk` ni *Source code*. Es una pre-release alfa; para compilarlo tú mismo mira [DEVELOPMENT](docs/DEVELOPMENT.es.md).
 
 ## Qué teles funcionan
 

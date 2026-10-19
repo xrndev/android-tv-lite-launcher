@@ -56,6 +56,10 @@ python -m pytest                       # unitarias, con FakeAdb (sin hardware)
 - Pruebas contra emulador: ver README → *Emuladores de Android TV*. Añade una fila a `docs/DEVICES.es.md` solo cuando hayas ejecutado el perfil.
 - Los comentarios del código están sobre todo en español; para código nuevo el inglés es bienvenido.
 
+## Pull requests
+
+`main` está protegida: nadie empuja a ella directamente. Haz un fork (o crea una rama), sube ahí tu cambio y abre una pull request; el mantenedor la revisa y la fusiona. La plantilla de la PR lista lo que hay que comprobar.
+
 ## Honestidad sobre lo probado
 
 No marques un dispositivo como *probado* si solo lo has visto en emulador, ni una app como `verified` si no has visto su paquete en una tele real. La tabla de [docs/DEVICES.es.md](docs/DEVICES.es.md) separa **hardware real**, **emulado** y **reportado** a propósito.
