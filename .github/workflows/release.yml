@@ -91,5 +91,5 @@ jobs:
           cp launcher/litelauncher-v*.apk .
           cp exe-*/tvlite-* .
           sha256sum litelauncher-v*.apk tvlite-* > SHA256SUMS
-          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --generate-notes \
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --generate-notes --prerelease \
             litelauncher-v*.apk tvlite-* SHA256SUMS
