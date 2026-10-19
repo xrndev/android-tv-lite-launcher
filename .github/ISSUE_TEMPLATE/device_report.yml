@@ -1,46 +1,36 @@
-name: Device report (probé mi tele)
-description: Cuéntanos cómo fue en tu tele. Sirve para ampliar la tabla de dispositivos probados.
-title: "[Device] Marca Modelo - SoC - Android X"
-labels: ["device-report"]
+name: Device report
+description: Tell us how tvlite behaved on your TV
+title: "[Device] Brand Model"
+labels: [device-report]
 body:
-  - type: markdown
+  - type: input
+    id: tv
     attributes:
-      value: |
-        Pega la salida de `tvlite detect <ip>` y marca lo que hiciste. No incluyas datos personales (cuentas, números de serie).
+      label: TV (brand, model, Android version)
+      placeholder: TCL 55P615, Android 11
+    validations:
+      required: true
   - type: textarea
-    id: detect
+    id: report
     attributes:
-      label: Salida de `tvlite detect`
+      label: Output of `tvlite report <ip>`
+      description: It is anonymous and nothing is sent. Read it before pasting.
       render: text
     validations:
       required: true
   - type: dropdown
-    id: level
-    attributes:
-      label: Hasta dónde llegaste
-      options:
-        - Solo detect / plan / --dry-run (no cambié nada)
-        - Apliqué la limpieza (apply)
-        - Apliqué limpieza y launcher
-        - Apliqué todo y probé restore
-    validations:
-      required: true
-  - type: textarea
     id: result
     attributes:
-      label: Resultado
-      description: ¿Arrancó bien? ¿Home abre el launcher nuevo? ¿Restore devolvió el original? ¿Falló algún paso?
+      label: What did you try?
+      options:
+        - Only the report
+        - Dry run (apply --dry-run)
+        - Applied and restore worked
+        - Applied, something went wrong
     validations:
       required: true
   - type: textarea
-    id: packages
+    id: notes
     attributes:
-      label: Paquetes de la marca que sobran (opcional)
-      description: Salida de `tvlite plan` y los paquetes de fabricante que no están en la lista. Solo nombres de paquete, y di cuáles has probado a quitar y restaurar.
-  - type: checkboxes
-    id: confirm
-    attributes:
-      label: Confirmación
-      options:
-        - label: Esto lo probé en una tele física (no en un emulador).
-        - label: No he incluido datos personales.
+      label: Notes
+      description: Did it boot? Does Home open the launcher? Did restore bring every package back?

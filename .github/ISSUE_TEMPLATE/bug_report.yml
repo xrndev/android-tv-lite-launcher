@@ -1,0 +1,27 @@
+name: Bug report
+description: Something does not work
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+  - type: input
+    id: env
+    attributes:
+      label: tvlite version, your OS and your TV model
+      placeholder: 0.1.0, Windows 11, TCL Android 11
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Output or error
+      description: Remove IPs, serial numbers and account names.
+      render: text
