@@ -27,6 +27,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 MAX_BYTES = 12000
+DISCARD_MAX_BYTES = 1 << 20  # tope de lo que se lee y descarta al rechazar; mas grande: se corta la conexion
 MAX_TEXT = 3900  # Telegram admite 4096
 RATE_LIMIT_PER_HOUR = 30
 KINDS = {"success", "partial", "failure"}
@@ -155,6 +156,19 @@ def make_handler(token: str, chat_id: str, limiter: RateLimiter, sender=send_tel
             self.send_header("Content-Length", "0")
             self.end_headers()
 
+        def _discard_body(self) -> None:
+            """Lee y descarta el cuerpo (con tope) antes de rechazar: si se cierra con datos sin leer, Windows envia
+            un RST y el cliente puede perder la respuesta (WinError 10053) en vez de ver el 403/413."""
+            try:
+                left = min(int(self.headers.get("Content-Length", "0")), DISCARD_MAX_BYTES)
+            except ValueError:
+                return
+            while left > 0:
+                chunk = self.rfile.read(min(left, 65536))
+                if not chunk:
+                    return
+                left -= len(chunk)
+
         def _ip(self) -> str:
             if trust_proxy and self.headers.get("X-Forwarded-For"):
                 return self.headers["X-Forwarded-For"].split(",")[0].strip()
@@ -162,12 +176,14 @@ def make_handler(token: str, chat_id: str, limiter: RateLimiter, sender=send_tel
 
         def do_POST(self) -> None:  # noqa: N802 (nombre fijado por http.server)
             if not (self.headers.get("User-Agent") or "").startswith("tvlite/"):
+                self._discard_body()
                 return self._reply(403)
             try:
                 length = int(self.headers.get("Content-Length", "0"))
             except ValueError:
                 return self._reply(400)
             if length > MAX_BYTES:
+                self._discard_body()
                 return self._reply(413)
             try:
                 event = json.loads(self.rfile.read(length).decode("utf-8"))

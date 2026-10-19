@@ -86,6 +86,13 @@ def test_invalid_requests_are_rejected(server, what, expected):
     assert sent == []  # nada de lo rechazado llega a Telegram
 
 
+def test_oversized_bodies_always_get_their_413_not_a_connection_reset(server):
+    """El rele lee y descarta el cuerpo antes de rechazar; si no, Windows a veces resetea la conexion (WinError 10053)."""
+    url, sent = server
+    assert [post(url, b"x" * 400_000) for _ in range(40)] == [413] * 40
+    assert sent == []
+
+
 def test_rate_limit_returns_429(server, tmp_path, apk):
     url, sent = server
     event = sample_events(tmp_path, apk)["minimal"]
